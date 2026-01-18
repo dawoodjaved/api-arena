@@ -1,0 +1,57 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get user's API keys
+    const apiKeys = await prisma.aPIKey.findMany({
+      where: { userId: session.user.id },
+      select: { id: true },
+    });
+
+    const keyIds = apiKeys.map((k) => k.id);
+
+    // Get request logs for the last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const logs = await prisma.requestLog.findMany({
+      where: {
+        apiKeyId: { in: keyIds },
+        timestamp: { gte: thirtyDaysAgo },
+      },
+    });
+
+    const totalRequests = logs.length;
+    const successRequests = logs.filter((l) => l.statusCode < 400).length;
+    const errorRequests = totalRequests - successRequests;
+    const successRate = totalRequests > 0 ? (successRequests / totalRequests) * 100 : 0;
+    const errorRate = totalRequests > 0 ? (errorRequests / totalRequests) * 100 : 0;
+    const avgLatency =
+      logs.length > 0
+        ? logs.reduce((sum, l) => sum + l.latency, 0) / logs.length
+        : 0;
+
+    return NextResponse.json({
+      totalRequests,
+      successRequests,
+      errorRequests,
+      successRate: successRate.toFixed(2),
+      errorRate: errorRate.toFixed(2),
+      avgLatency: Math.round(avgLatency),
+    });
+  } catch (error) {
+    console.error("Error fetching usage:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch usage" },
+      { status: 500 }
+    );
+  }
+}

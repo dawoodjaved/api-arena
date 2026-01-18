@@ -1,0 +1,233 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String        @id @default(cuid())
+  name          String?
+  email         String        @unique
+  emailVerified DateTime?
+  image         String?
+  role          String        @default("user") // user, admin, provider
+  accounts      Account[]
+  sessions      Session[]
+  apis          API[]
+  apiKeys       APIKey[]
+  subscriptions Subscription[]
+  reviews       Review[]
+  invoices      Invoice[]
+  payouts       Payout[]
+  tickets       Ticket[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  @@unique([identifier, token])
+}
+
+model API {
+  id            String        @id @default(cuid())
+  name          String
+  slug          String        @unique
+  description   String        @db.Text
+  category      String
+  logo          String?
+  isPublic      Boolean       @default(true)
+  isApproved    Boolean       @default(false)
+  isFeatured    Boolean       @default(false)
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  versions      APIVersion[]
+  subscriptions Subscription[]
+  reviews       Review[]
+  analytics     AnalyticsSnapshot[]
+  apiKeys       APIKey[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model APIVersion {
+  id              String     @id @default(cuid())
+  apiId           String
+  api             API        @relation(fields: [apiId], references: [id], onDelete: Cascade)
+  version         String
+  openApiSpec     Json
+  isDeprecated    Boolean    @default(false)
+  deprecationDate DateTime?
+  changelog       String?     @db.Text
+  endpoints       Endpoint[]
+  createdAt       DateTime   @default(now())
+  @@unique([apiId, version])
+}
+
+model Endpoint {
+  id          String       @id @default(cuid())
+  versionId   String
+  version     APIVersion   @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  method      String
+  path        String
+  description String?      @db.Text
+  requestLogs RequestLog[]
+  @@unique([versionId, method, path])
+}
+
+model APIKey {
+  id          String       @id @default(cuid())
+  key         String       @unique
+  name        String
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apiId       String
+  api         API          @relation(fields: [apiId], references: [id], onDelete: Cascade)
+  scopes      String[]
+  environment String       @default("production")
+  isActive    Boolean      @default(true)
+  lastUsedAt  DateTime?
+  requestLogs RequestLog[]
+  createdAt   DateTime     @default(now())
+  expiresAt   DateTime?
+}
+
+model Subscription {
+  id                 String   @id @default(cuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apiId              String
+  api                API      @relation(fields: [apiId], references: [id], onDelete: Cascade)
+  plan               String   // free, pro, enterprise
+  status             String   // active, cancelled, past_due, trialing
+  stripeCustomerId   String
+  stripeSubscriptionId String?
+  currentPeriodEnd   DateTime
+  trialEnd           DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  @@unique([userId, apiId])
+}
+
+model Invoice {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount      Float
+  currency    String   @default("usd")
+  status      String   // paid, pending, failed
+  paidAt      DateTime?
+  dueDate     DateTime
+  items       Json
+  stripePdfUrl String?
+  stripeInvoiceId String?
+  createdAt   DateTime @default(now())
+}
+
+model Payout {
+  id            String   @id @default(cuid())
+  providerId   String
+  provider     User     @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  amount       Float
+  status       String   // pending, processing, paid, failed
+  stripePayoutId String?
+  paidAt       DateTime?
+  period       String
+  createdAt    DateTime @default(now())
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apiId     String
+  api       API      @relation(fields: [apiId], references: [id], onDelete: Cascade)
+  rating    Int      // 1-5
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([userId, apiId])
+}
+
+model RequestLog {
+  id         String   @id @default(cuid())
+  apiKeyId   String
+  apiKey     APIKey   @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+  endpointId String
+  endpoint   Endpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  method     String
+  path       String
+  statusCode Int
+  latency    Int      // milliseconds
+  timestamp  DateTime @default(now())
+  ipAddress  String
+  userAgent  String?
+  requestBody Json?
+  responseBody Json?
+  @@index([apiKeyId, timestamp])
+  @@index([endpointId, timestamp])
+}
+
+model AnalyticsSnapshot {
+  id            String   @id @default(cuid())
+  apiId         String
+  api           API      @relation(fields: [apiId], references: [id], onDelete: Cascade)
+  date          DateTime
+  totalRequests Int
+  successRequests Int
+  errorRequests Int
+  avgLatency    Float
+  p95Latency    Float
+  p99Latency    Float
+  uniqueUsers   Int
+  revenue       Float
+  topEndpoints  Json
+  topCountries  Json
+  @@unique([apiId, date])
+}
+
+model Ticket {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject     String
+  description String   @db.Text
+  status      String   @default("open") // open, in_progress, resolved, closed
+  priority    String   @default("medium") // low, medium, high, urgent
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
