@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
+import { getServerSession } from "@/lib/get-session";
 import { authOptions } from "@/lib/auth";
-import { stripe, PLANS } from "@/lib/stripe";
+import { stripe, PLANS, isStripeConfigured } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
@@ -11,51 +11,54 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    if (!isStripeConfigured()) {
+      return NextResponse.json(
+        {
+          error:
+            "Stripe is not configured. Add a real STRIPE_SECRET_KEY to .env.local to enable upgrades.",
+          code: "STRIPE_NOT_CONFIGURED",
+        },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const { plan, apiId } = body;
 
-    if (!plan || !["pro", "enterprise"].includes(plan)) {
+    if (!plan || plan !== "pro") {
       return NextResponse.json(
-        { error: "Invalid plan" },
+        {
+          error:
+            plan === "enterprise"
+              ? "Please contact sales for enterprise plans"
+              : "Invalid plan. Use plan: \"pro\".",
+        },
         { status: 400 }
       );
     }
 
-    if (plan === "enterprise") {
-      return NextResponse.json(
-        { error: "Please contact sales for enterprise plans" },
-        { status: 400 }
-      );
-    }
-
-    // Get or create Stripe customer
-    let user = await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: session.user.id },
     });
 
-    let customerId: string;
-
-    if (user && (user as any).stripeCustomerId) {
-      customerId = (user as any).stripeCustomerId;
-    } else {
-      const customer = await stripe.customers.create({
-        email: session.user.email || undefined,
-        metadata: {
-          userId: session.user.id,
-        },
-      });
-
-      await prisma.user.update({
-        where: { id: session.user.id },
-        data: {
-          // Store in a JSON field or extend schema
-        },
-      });
-
-      customerId = customer.id;
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Create checkout session
+    let customerId = user.stripeCustomerId;
+
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: session.user.email || undefined,
+        metadata: { userId: session.user.id },
+      });
+      customerId = customer.id;
+      await prisma.user.update({
+        where: { id: session.user.id },
+        data: { stripeCustomerId: customerId },
+      });
+    }
+
     const checkoutSession = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: "subscription",
@@ -65,12 +68,10 @@ export async function POST(request: NextRequest) {
           price_data: {
             currency: "usd",
             product_data: {
-              name: `${PLANS[plan as keyof typeof PLANS].name} Plan`,
+              name: `${PLANS.pro.name} Plan`,
             },
-            recurring: {
-              interval: "month",
-            },
-            unit_amount: PLANS[plan as keyof typeof PLANS].price * 100,
+            recurring: { interval: "month" },
+            unit_amount: PLANS.pro.price * 100,
           },
           quantity: 1,
         },

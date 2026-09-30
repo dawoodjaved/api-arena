@@ -9,8 +9,32 @@ const registerSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
+// Check database connection
+async function checkDatabaseConnection(): Promise<boolean> {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return true;
+  } catch (error) {
+    console.error("Database connection check failed:", error);
+    return false;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
+    // Check database connection first
+    const dbConnected = await checkDatabaseConnection();
+    if (!dbConnected) {
+      return NextResponse.json(
+        {
+          error: "Database connection failed",
+          message: "The database server is not running or not configured. Please check your DATABASE_URL environment variable and ensure PostgreSQL is running.",
+          help: "See DATABASE_SETUP.md for setup instructions",
+        },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const validated = registerSchema.parse(body);
 
@@ -30,7 +54,6 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(validated.password, 10);
 
     // Use transaction to ensure atomicity
-    // This ensures both user and account are created together or not at all
     const result = await prisma.$transaction(async (tx) => {
       // Create user first
       const user = await tx.user.create({
@@ -41,21 +64,19 @@ export async function POST(request: NextRequest) {
       });
 
       // Then create account with credentials
-      // Account has unique constraint on [provider, providerAccountId]
-      // Using user.id as providerAccountId ensures uniqueness per user
       await tx.account.create({
         data: {
           userId: user.id,
           type: "credentials",
           provider: "credentials",
-          providerAccountId: user.id, // Use user.id to ensure uniqueness
-          access_token: hashedPassword, // Store password hash here
+          providerAccountId: user.id,
+          access_token: hashedPassword,
         },
       });
 
       return user;
     }, {
-      timeout: 10000, // 10 second timeout
+      timeout: 10000,
     });
 
     return NextResponse.json(
@@ -84,7 +105,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Log the full error for debugging
     console.error("Registration error:", error);
     
     // Handle Prisma-specific errors
@@ -94,13 +114,13 @@ export async function POST(request: NextRequest) {
       // Unique constraint violation
       if (prismaError.code === 'P2002') {
         const target = (prismaError as any).meta?.target;
-        if (target && target.includes('email')) {
+        if (target && Array.isArray(target) && target.includes('email')) {
           return NextResponse.json(
             { error: "User with this email already exists" },
             { status: 400 }
           );
         }
-        if (target && target.includes('providerAccountId')) {
+        if (target && Array.isArray(target) && target.includes('providerAccountId')) {
           return NextResponse.json(
             { error: "Account already exists for this user" },
             { status: 400 }
@@ -112,12 +132,14 @@ export async function POST(request: NextRequest) {
         );
       }
       
-      // Database connection error
-      if (prismaError.code === 'P1001' || prismaError.code === 'P1000') {
+      // Database connection errors
+      if (prismaError.code === 'P1001' || prismaError.code === 'P1000' || prismaError.code === 'P1002') {
         return NextResponse.json(
           { 
             error: "Database connection failed",
-            message: "Please check your database configuration and ensure the database server is running."
+            message: "Please check your database configuration and ensure the database server is running.",
+            help: "See DATABASE_SETUP.md for setup instructions",
+            code: prismaError.code
           },
           { status: 503 }
         );
@@ -132,8 +154,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Return error message
+    // Check for connection error in message
     const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+    if (errorMessage.includes("fetch failed") || errorMessage.includes("Cannot fetch data")) {
+      return NextResponse.json(
+        { 
+          error: "Database connection failed",
+          message: "The database server is not running or not accessible.",
+          help: "Please check your DATABASE_URL environment variable and ensure PostgreSQL is running. See DATABASE_SETUP.md for setup instructions."
+        },
+        { status: 503 }
+      );
+    }
 
     return NextResponse.json(
       { 

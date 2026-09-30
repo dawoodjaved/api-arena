@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
+import { getServerSession } from "@/lib/get-session";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { generateApiKey } from "@/lib/utils";
+import {
+  apiKeyPrefix,
+  generateApiKeyPlaintext,
+  hashApiKey,
+} from "@/lib/api-keys";
 import { z } from "zod";
 
 const createKeySchema = z.object({
   name: z.string().min(1),
-  apiId: z.string().optional(),
+  apiId: z.string().min(1),
   scopes: z.array(z.string()).optional(),
-  environment: z.enum(["development", "staging", "production"]).default("production"),
+  environment: z
+    .enum(["development", "staging", "production"])
+    .default("production"),
 });
 
 export async function GET(request: NextRequest) {
@@ -23,17 +29,20 @@ export async function GET(request: NextRequest) {
       where: { userId: session.user.id },
       include: {
         api: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
+          select: { id: true, name: true, slug: true },
         },
       },
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json(keys);
+    // Never return hashed key material
+    return NextResponse.json(
+      keys.map(({ key, ...rest }) => ({
+        ...rest,
+        key: undefined,
+        keyHint: rest.keyPrefix || "ara_****",
+      }))
+    );
   } catch (error) {
     console.error("Error fetching API keys:", error);
     return NextResponse.json([]);
@@ -50,65 +59,67 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validated = createKeySchema.parse(body);
 
-    // If apiId is provided, verify it exists and user has access
-    if (validated.apiId) {
-      const api = await prisma.aPI.findUnique({
-        where: { id: validated.apiId },
+    const api = await prisma.aPI.findUnique({
+      where: { id: validated.apiId },
+    });
+
+    if (!api) {
+      return NextResponse.json({ error: "API not found" }, { status: 404 });
+    }
+
+    if (api.userId !== session.user.id) {
+      const subscription = await prisma.subscription.findFirst({
+        where: {
+          userId: session.user.id,
+          apiId: validated.apiId,
+          status: "active",
+        },
       });
 
-      if (!api) {
+      // Allow keys for approved public APIs on free tier (implicit free access)
+      if (!subscription && !api.isApproved) {
         return NextResponse.json(
-          { error: "API not found" },
-          { status: 404 }
+          { error: "You need access to this API first" },
+          { status: 403 }
         );
-      }
-
-      // Check if user has subscription or is the owner
-      if (api.userId !== session.user.id) {
-        const subscription = await prisma.subscription.findFirst({
-          where: {
-            userId: session.user.id,
-            apiId: validated.apiId,
-            status: "active",
-          },
-        });
-
-        if (!subscription) {
-          return NextResponse.json(
-            { error: "You need to subscribe to this API first" },
-            { status: 403 }
-          );
-        }
       }
     }
 
-    const key = generateApiKey();
+    const plaintext = generateApiKeyPlaintext();
+    const hashed = hashApiKey(plaintext);
+    const prefix = apiKeyPrefix(plaintext);
 
     const apiKey = await prisma.aPIKey.create({
       data: {
-        key,
+        key: hashed,
+        keyPrefix: prefix,
         name: validated.name,
         userId: session.user.id,
-        apiId: validated.apiId || "",
-        scopes: validated.scopes || [],
+        apiId: validated.apiId,
+        scopes: validated.scopes?.length ? validated.scopes : ["full"],
         environment: validated.environment,
       },
       include: {
         api: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
+          select: { id: true, name: true, slug: true },
         },
       },
     });
 
-    return NextResponse.json(apiKey, { status: 201 });
+    const { key: _omit, ...safe } = apiKey;
+
+    return NextResponse.json(
+      {
+        ...safe,
+        key: plaintext, // shown once
+        message: "Copy this key now. It will not be shown again.",
+      },
+      { status: 201 }
+    );
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid input", details: error.errors },
+        { error: "Invalid input", details: error.issues },
         { status: 400 }
       );
     }

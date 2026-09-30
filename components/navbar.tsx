@@ -1,124 +1,98 @@
 "use client";
 
 import Link from "next/link";
-import { useSession, signIn, signOut } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 
 export function Navbar() {
   const { data: session } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+
+  const linkClass = (href: string) =>
+    `text-sm font-medium transition-colors ${
+      pathname === href || pathname?.startsWith(href + "/")
+        ? "text-ink"
+        : "text-ink-muted hover:text-ink"
+    }`;
 
   return (
-    <nav className="h-20 bg-[rgba(10,14,26,0.8)] backdrop-blur-xl border-b border-[rgba(255,255,255,0.05)] sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="flex justify-between items-center h-full">
-          <div className="flex items-center">
-            <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-[#4F7FFF] to-[#8B5CF6] bg-clip-text text-transparent">
-              APIArena
-            </Link>
-          </div>
+    <nav className="sticky top-0 z-50 border-b border-[rgba(11,18,32,0.08)] bg-[rgba(243,245,247,0.9)] backdrop-blur-md">
+      <div className="mx-auto flex h-[4.25rem] max-w-container items-center justify-between px-5">
+        <Link href="/" className="font-display text-xl font-bold tracking-tight text-ink">
+          APIArena
+        </Link>
 
-          <div className="hidden md:flex items-center space-x-6">
-            <Link
-              href="/marketplace"
-              className="text-gray-400 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
-            >
-              Marketplace
-            </Link>
-            {session && (
-              <>
-                <Link
-                  href="/dashboard"
-                  className="text-gray-400 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Dashboard
+        <div className="hidden items-center gap-8 md:flex">
+          <Link href="/marketplace" className={linkClass("/marketplace")}>
+            Marketplace
+          </Link>
+          {session && (
+            <>
+              <Link href="/dashboard" className={linkClass("/dashboard")}>
+                Dashboard
+              </Link>
+              <Link href="/api-publisher/new" className={linkClass("/api-publisher")}>
+                Publish
+              </Link>
+              {(session.user as any)?.role === "admin" && (
+                <Link href="/admin" className={linkClass("/admin")}>
+                  Admin
                 </Link>
-                <Link
-                  href="/api-publisher/new"
-                  className="text-gray-400 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Publish API
-                </Link>
-                {(session.user as any)?.role === "admin" && (
-                  <Link
-                    href="/admin"
-                    className="text-gray-400 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                  >
-                    Admin
-                  </Link>
-                )}
-              </>
-            )}
-            {session ? (
-              <button
-                onClick={() => signOut({ callbackUrl: "/" })}
-                className="px-4 py-2 bg-transparent text-gray-400 border border-[rgba(255,255,255,0.05)] rounded-lg hover:bg-[#151B2B] hover:text-white hover:border-[rgba(79,127,255,0.1)] transition-all"
-              >
-                Sign Out
-              </button>
-            ) : (
-              <>
-                <Link
-                  href="/auth/signin"
-                  className="px-4 py-2 bg-[#4F7FFF] hover:bg-[#6B92FF] text-white rounded-lg font-medium transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(79,127,255,0.3)]"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/auth/signup"
-                  className="px-4 py-2 bg-transparent border border-[rgba(255,255,255,0.05)] text-gray-300 rounded-lg font-medium hover:bg-[#151B2B] hover:border-[rgba(79,127,255,0.1)] transition-all"
-                >
-                  Sign Up
-                </Link>
-              </>
-            )}
-          </div>
-
-          <div className="md:hidden">
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="text-gray-400 hover:text-white"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
+              )}
+            </>
+          )}
         </div>
 
-        {mobileMenuOpen && (
-          <div className="md:hidden py-4 space-y-2 border-t border-[rgba(255,255,255,0.05)] mt-4">
-            <Link
-              href="/marketplace"
-              className="block text-gray-400 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
+        <div className="hidden items-center gap-3 md:flex">
+          {session ? (
+            <button
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="btn btn-ghost"
             >
+              Sign out
+            </button>
+          ) : (
+            <>
+              <Link href="/auth/signin" className="btn btn-ghost">
+                Sign in
+              </Link>
+              <Link href="/auth/signup" className="btn btn-primary">
+                Get started
+              </Link>
+            </>
+          )}
+        </div>
+
+        <button
+          className="p-2 text-ink-muted md:hidden"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle menu"
+        >
+          {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </button>
+      </div>
+
+      {mobileMenuOpen && (
+        <div className="border-t border-[rgba(11,18,32,0.08)] bg-canvas px-5 py-4 md:hidden">
+          <div className="flex flex-col gap-3">
+            <Link href="/marketplace" onClick={() => setMobileMenuOpen(false)} className="py-2 text-ink">
               Marketplace
             </Link>
             {session && (
               <>
-                <Link
-                  href="/dashboard"
-                  className="block text-gray-400 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
+                <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="py-2 text-ink">
                   Dashboard
                 </Link>
                 <Link
                   href="/api-publisher/new"
-                  className="block text-gray-400 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
+                  className="py-2 text-ink"
                 >
-                  Publish API
+                  Publish
                 </Link>
-                {(session.user as any)?.role === "admin" && (
-                  <Link
-                    href="/admin"
-                    className="block text-gray-400 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Admin
-                  </Link>
-                )}
               </>
             )}
             {session ? (
@@ -127,31 +101,23 @@ export function Navbar() {
                   signOut({ callbackUrl: "/" });
                   setMobileMenuOpen(false);
                 }}
-                className="block w-full text-left px-4 py-2 bg-transparent text-gray-400 border border-[rgba(255,255,255,0.05)] rounded-lg hover:bg-[#151B2B] hover:text-white hover:border-[rgba(79,127,255,0.1)] transition-all"
+                className="btn btn-secondary mt-2 w-full"
               >
-                Sign Out
+                Sign out
               </button>
             ) : (
-              <>
-                <Link
-                  href="/auth/signin"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block w-full text-left px-4 py-2 bg-[#4F7FFF] hover:bg-[#6B92FF] text-white rounded-lg font-medium transition-all"
-                >
-                  Sign In
+              <div className="mt-2 flex flex-col gap-2">
+                <Link href="/auth/signin" className="btn btn-secondary w-full" onClick={() => setMobileMenuOpen(false)}>
+                  Sign in
                 </Link>
-                <Link
-                  href="/auth/signup"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block w-full text-left px-4 py-2 bg-transparent border border-[rgba(255,255,255,0.05)] text-gray-300 rounded-lg font-medium hover:bg-[#151B2B] hover:border-[rgba(79,127,255,0.1)] transition-all"
-                >
-                  Sign Up
+                <Link href="/auth/signup" className="btn btn-primary w-full" onClick={() => setMobileMenuOpen(false)}>
+                  Get started
                 </Link>
-              </>
+              </div>
             )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </nav>
   );
 }

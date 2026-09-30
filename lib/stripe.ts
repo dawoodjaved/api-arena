@@ -1,39 +1,29 @@
 import Stripe from "stripe";
+import { PLANS } from "./plans";
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2024-12-18.acacia",
+export { PLANS };
+
+function readStripeKey(): string | null {
+  const key = process.env.STRIPE_SECRET_KEY?.trim();
+  if (!key) return null;
+  if (
+    key.includes("placeholder") ||
+    key.includes("your_") ||
+    key.includes("xxx") ||
+    key === "sk_test_" ||
+    key.length < 20
+  ) {
+    return null;
+  }
+  return key;
+}
+
+export function isStripeConfigured(): boolean {
+  return Boolean(readStripeKey());
+}
+
+const stripeKey = readStripeKey() || "sk_test_placeholder_not_configured";
+
+export const stripe = new Stripe(stripeKey, {
+  apiVersion: "2025-12-15.clover",
 });
-
-export const PLANS = {
-  free: {
-    name: "Free",
-    price: 0,
-    requests: 100,
-    rateLimit: "100 requests/hour",
-    features: ["Basic support", "Public APIs only"],
-  },
-  pro: {
-    name: "Pro",
-    price: 49,
-    requests: 10000,
-    rateLimit: "10k requests/hour",
-    features: [
-      "Priority support",
-      "All APIs",
-      "Advanced analytics",
-      "SLA guarantee",
-    ],
-  },
-  enterprise: {
-    name: "Enterprise",
-    price: "Custom",
-    requests: Infinity,
-    rateLimit: "Unlimited",
-    features: [
-      "Dedicated support",
-      "Custom contracts",
-      "White-label options",
-      "Custom integrations",
-    ],
-  },
-} as const;

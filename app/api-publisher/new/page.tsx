@@ -4,9 +4,18 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Upload, FileText, ArrowRight } from "lucide-react";
+import * as yaml from "js-yaml";
+
+function parseSpecFile(text: string) {
+  const trimmed = text.trim();
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+    return JSON.parse(trimmed);
+  }
+  return yaml.load(trimmed);
+}
 
 export default function NewAPIPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -25,7 +34,7 @@ export default function NewAPIPage() {
       let openApiSpec = null;
       if (openApiFile) {
         const text = await openApiFile.text();
-        openApiSpec = JSON.parse(text);
+        openApiSpec = parseSpecFile(text);
       }
 
       if (openApiSpec) {
@@ -44,7 +53,8 @@ export default function NewAPIPage() {
           const data = await res.json();
           router.push(`/api-publisher/${data.api.id}/edit`);
         } else {
-          alert("Failed to create API");
+          const err = await res.json().catch(() => ({}));
+          alert(err.error || "Failed to create API");
         }
       } else {
         const res = await fetch("/api/apis", {
@@ -62,33 +72,43 @@ export default function NewAPIPage() {
       }
     } catch (error) {
       console.error("Error creating API:", error);
-      alert("Failed to create API");
+      alert("Failed to create API. Check that the OpenAPI file is valid JSON or YAML.");
     } finally {
       setLoading(false);
     }
   };
 
+  if (status === "loading") {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center text-ink-muted">
+        Loading…
+      </div>
+    );
+  }
+
   if (!session) {
     return (
-      <div className="min-h-screen bg-[#0A0E1A] flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">Please sign in to publish an API</h1>
-          <a href="/auth/signin" className="text-[#4F7FFF] hover:text-[#6B92FF]">
-            Sign In
-          </a>
-        </div>
+      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 px-5">
+        <h1 className="font-display text-2xl font-bold text-ink">
+          Please sign in to publish an API
+        </h1>
+        <a href="/auth/signin" className="btn btn-primary">
+          Sign In
+        </a>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0E1A]">
-      <div className="max-w-4xl mx-auto px-6 py-16">
-        <h1 className="text-6xl font-bold mb-8 leading-tight">Publish New API</h1>
+    <div className="page-shell">
+      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-16">
+        <h1 className="mb-8 font-display text-4xl font-bold text-ink sm:text-5xl">
+          Publish New API
+        </h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="mb-2 block text-sm font-medium text-ink">
               API Name *
             </label>
             <input
@@ -96,34 +116,38 @@ export default function NewAPIPage() {
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-3 border border-[rgba(255,255,255,0.05)] rounded-lg bg-[#151B2B] text-white placeholder-gray-500 focus:ring-2 focus:ring-[#4F7FFF] focus:border-transparent outline-none"
+              className="w-full rounded-lg border border-[rgba(11,18,32,0.08)] bg-surface px-4 py-3 text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
               placeholder="My Awesome API"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="mb-2 block text-sm font-medium text-ink">
               Description *
             </label>
             <textarea
               required
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
               rows={4}
-              className="w-full px-4 py-3 border border-[rgba(255,255,255,0.05)] rounded-lg bg-[#151B2B] text-white placeholder-gray-500 focus:ring-2 focus:ring-[#4F7FFF] focus:border-transparent outline-none"
+              className="w-full rounded-lg border border-[rgba(11,18,32,0.08)] bg-surface px-4 py-3 text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
               placeholder="Describe what your API does..."
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="mb-2 block text-sm font-medium text-ink">
               Category *
             </label>
             <select
               required
               value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="w-full px-4 py-3 border border-[rgba(255,255,255,0.05)] rounded-lg bg-[#151B2B] text-white focus:ring-2 focus:ring-[#4F7FFF] focus:border-transparent outline-none"
+              onChange={(e) =>
+                setFormData({ ...formData, category: e.target.value })
+              }
+              className="w-full rounded-lg border border-[rgba(11,18,32,0.08)] bg-surface px-4 py-3 text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
             >
               <option value="Data">Data</option>
               <option value="AI/ML">AI/ML</option>
@@ -138,10 +162,10 @@ export default function NewAPIPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="mb-2 block text-sm font-medium text-ink">
               OpenAPI Specification (Optional)
             </label>
-            <div className="border-2 border-dashed border-[rgba(255,255,255,0.05)] rounded-lg p-8 text-center bg-[#151B2B] hover:border-[rgba(79,127,255,0.2)] transition-all">
+            <div className="rounded-lg border-2 border-dashed border-[rgba(11,18,32,0.12)] bg-surface p-8 text-center transition-all hover:border-accent/40">
               <input
                 type="file"
                 accept=".json,.yaml,.yml"
@@ -154,9 +178,12 @@ export default function NewAPIPage() {
                 className="hidden"
                 id="openapi-file"
               />
-              <label htmlFor="openapi-file" className="cursor-pointer flex flex-col items-center">
-                <Upload className="w-12 h-12 text-[#4F7FFF] mb-4" />
-                <span className="text-gray-400">
+              <label
+                htmlFor="openapi-file"
+                className="flex cursor-pointer flex-col items-center"
+              >
+                <Upload className="mb-4 h-12 w-12 text-accent" />
+                <span className="text-ink-muted">
                   {openApiFile
                     ? openApiFile.name
                     : "Click to upload OpenAPI spec (JSON or YAML)"}
@@ -170,10 +197,12 @@ export default function NewAPIPage() {
               type="checkbox"
               id="isPublic"
               checked={formData.isPublic}
-              onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
-              className="mr-2 h-4 w-4 border-[rgba(255,255,255,0.05)] rounded bg-[#151B2B] text-[#4F7FFF] focus:ring-[#4F7FFF]"
+              onChange={(e) =>
+                setFormData({ ...formData, isPublic: e.target.checked })
+              }
+              className="mr-2 h-4 w-4 rounded border-[rgba(11,18,32,0.2)] text-accent focus:ring-accent"
             />
-            <label htmlFor="isPublic" className="text-sm text-gray-300">
+            <label htmlFor="isPublic" className="text-sm text-ink-soft">
               Make this API public
             </label>
           </div>
@@ -181,14 +210,14 @@ export default function NewAPIPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-6 py-3 bg-[#4F7FFF] hover:bg-[#6B92FF] text-white rounded-lg font-medium transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(79,127,255,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="btn btn-primary w-full disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? (
-              <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              <span className="inline-block h-5 w-5 animate-spin rounded-full border-b-2 border-white" />
             ) : (
               <>
                 Create API
-                <ArrowRight className="w-5 h-5" />
+                <ArrowRight className="h-5 w-5" />
               </>
             )}
           </button>

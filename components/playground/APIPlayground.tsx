@@ -1,12 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Play, Copy, Download, Code, CheckCircle2 } from "lucide-react";
-import {
-  ArrowRightIcon,
-  CodeBracketIcon,
-  DocumentTextIcon,
-} from "@heroicons/react/24/outline";
+import { useEffect, useState } from "react";
+import { Play, Copy, CheckCircle2 } from "lucide-react";
+import { CodeBracketIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
 
 interface APIPlaygroundProps {
   apiKey?: string;
@@ -25,13 +21,30 @@ export function APIPlayground({
   version = "1.0.0",
   endpoints = [],
 }: APIPlaygroundProps) {
-  const [selectedMethod, setSelectedMethod] = useState("GET");
+  const [selectedMethod, setSelectedMethod] = useState(
+    endpoints[0]?.method || "GET"
+  );
   const [selectedPath, setSelectedPath] = useState(endpoints[0]?.path || "/");
   const [requestBody, setRequestBody] = useState("");
   const [response, setResponse] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [requestHistory, setRequestHistory] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!endpoints.length) return;
+    const match = endpoints.find(
+      (e) => e.path === selectedPath && e.method === selectedMethod
+    );
+    if (!match) {
+      setSelectedMethod(endpoints[0].method);
+      setSelectedPath(endpoints[0].path);
+    }
+  }, [endpoints, selectedPath, selectedMethod]);
+
+  const gatewayPath = apiSlug
+    ? `/api/gateway/${apiSlug}/${version}${selectedPath.startsWith("/") ? selectedPath : `/${selectedPath}`}`
+    : "";
 
   const handleSendRequest = async () => {
     if (!apiKey || !apiSlug) {
@@ -41,7 +54,6 @@ export function APIPlayground({
 
     setLoading(true);
     try {
-      const url = `/api/gateway/${apiSlug}/${version}${selectedPath}`;
       const options: RequestInit = {
         method: selectedMethod,
         headers: {
@@ -54,7 +66,7 @@ export function APIPlayground({
         options.body = requestBody;
       }
 
-      const res = await fetch(url, options);
+      const res = await fetch(gatewayPath, options);
       const data = await res.json();
 
       const requestInfo = {
@@ -78,15 +90,15 @@ export function APIPlayground({
   };
 
   const generateCurl = () => {
-    if (!apiKey || !apiSlug) return "";
-    
-    const url = `https://api.apiarena.com/api/gateway/${apiSlug}/${version}${selectedPath}`;
+    if (!apiKey || !apiSlug || typeof window === "undefined") return "";
+
+    const url = `${window.location.origin}${gatewayPath}`;
     let curl = `curl -X ${selectedMethod} "${url}" \\\n  -H "X-API-Key: ${apiKey}"`;
-    
+
     if (selectedMethod !== "GET" && requestBody) {
-      curl += ` \\\n  -H "Content-Type: application/json" \\\n  -d '${requestBody}'`;
+      curl += ` \\\n  -H "Content-Type: application/json" \\\n  -d '${requestBody.replace(/'/g, "'\\''")}'`;
     }
-    
+
     return curl;
   };
 
@@ -96,32 +108,37 @@ export function APIPlayground({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const onSelectEndpoint = (value: string) => {
+    const [method, ...pathParts] = value.split(" ");
+    const path = pathParts.join(" ") || "/";
+    setSelectedMethod(method);
+    setSelectedPath(path);
+  };
+
   return (
-    <div className="bg-[#151B2B] border border-[rgba(255,255,255,0.05)] rounded-2xl p-6 backdrop-blur-xl">
+    <div className="rounded-2xl border border-[rgba(11,18,32,0.08)] bg-surface p-6 shadow-soft">
       <div className="mb-6">
-        <h2 className="text-2xl font-semibold text-white mb-2 flex items-center gap-2">
-          <CodeBracketIcon className="w-6 h-6 text-[#4F7FFF]" />
+        <h2 className="mb-2 flex items-center gap-2 font-display text-2xl font-semibold text-ink">
+          <CodeBracketIcon className="h-6 w-6 text-accent" />
           API Playground
         </h2>
-        <p className="text-gray-400">Test your API endpoints interactively</p>
+        <p className="text-ink-muted">Test your API endpoints interactively</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Request Builder */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Method
-            </label>
-            <div className="flex gap-2">
+            <label className="mb-2 block text-sm font-medium text-ink">Method</label>
+            <div className="flex flex-wrap gap-2">
               {["GET", "POST", "PUT", "DELETE", "PATCH"].map((method) => (
                 <button
                   key={method}
+                  type="button"
                   onClick={() => setSelectedMethod(method)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
                     selectedMethod === method
-                      ? "bg-[#4F7FFF] text-white"
-                      : "bg-[#0A0E1A] text-gray-400 border border-[rgba(255,255,255,0.05)] hover:border-[rgba(79,127,255,0.2)]"
+                      ? "bg-accent text-white"
+                      : "border border-[rgba(11,18,32,0.08)] bg-canvas text-ink-muted hover:border-accent/40"
                   }`}
                 >
                   {method}
@@ -131,17 +148,15 @@ export function APIPlayground({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Endpoint
-            </label>
+            <label className="mb-2 block text-sm font-medium text-ink">Endpoint</label>
             {endpoints.length > 0 ? (
               <select
-                value={selectedPath}
-                onChange={(e) => setSelectedPath(e.target.value)}
-                className="w-full px-4 py-2 border border-[rgba(255,255,255,0.05)] rounded-lg bg-[#0A0E1A] text-white focus:ring-2 focus:ring-[#4F7FFF] focus:border-transparent outline-none"
+                value={`${selectedMethod} ${selectedPath}`}
+                onChange={(e) => onSelectEndpoint(e.target.value)}
+                className="w-full rounded-lg border border-[rgba(11,18,32,0.08)] bg-canvas px-4 py-2 text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
               >
                 {endpoints.map((endpoint, idx) => (
-                  <option key={idx} value={endpoint.path}>
+                  <option key={idx} value={`${endpoint.method} ${endpoint.path}`}>
                     {endpoint.method} {endpoint.path}
                   </option>
                 ))}
@@ -152,14 +167,14 @@ export function APIPlayground({
                 value={selectedPath}
                 onChange={(e) => setSelectedPath(e.target.value)}
                 placeholder="/endpoint/path"
-                className="w-full px-4 py-2 border border-[rgba(255,255,255,0.05)] rounded-lg bg-[#0A0E1A] text-white placeholder-gray-500 focus:ring-2 focus:ring-[#4F7FFF] focus:border-transparent outline-none"
+                className="w-full rounded-lg border border-[rgba(11,18,32,0.08)] bg-canvas px-4 py-2 text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
               />
             )}
           </div>
 
           {selectedMethod !== "GET" && (
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="mb-2 block text-sm font-medium text-ink">
                 Request Body (JSON)
               </label>
               <textarea
@@ -167,102 +182,98 @@ export function APIPlayground({
                 onChange={(e) => setRequestBody(e.target.value)}
                 placeholder='{"key": "value"}'
                 rows={8}
-                className="w-full px-4 py-2 border border-[rgba(255,255,255,0.05)] rounded-lg bg-[#0A0E1A] text-white font-mono text-sm placeholder-gray-500 focus:ring-2 focus:ring-[#4F7FFF] focus:border-transparent outline-none"
+                className="w-full rounded-lg border border-[rgba(11,18,32,0.08)] bg-canvas px-4 py-2 font-mono text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
               />
             </div>
           )}
 
           <button
+            type="button"
             onClick={handleSendRequest}
             disabled={loading || !apiKey}
-            className="w-full px-6 py-3 bg-[#4F7FFF] hover:bg-[#6B92FF] text-white rounded-lg font-medium transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(79,127,255,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="btn btn-primary w-full disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? (
               <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                <span className="h-5 w-5 animate-spin rounded-full border-b-2 border-white" />
                 Sending...
               </>
             ) : (
               <>
-                <Play className="w-5 h-5" />
+                <Play className="h-5 w-5" />
                 Send Request
               </>
             )}
           </button>
 
-          {/* cURL Command */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-300">
-                cURL Command
-              </label>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="block text-sm font-medium text-ink">cURL Command</label>
               <button
+                type="button"
                 onClick={() => copyToClipboard(generateCurl())}
-                className="text-[#4F7FFF] hover:text-[#6B92FF] text-sm flex items-center gap-1"
+                className="flex items-center gap-1 text-sm text-accent hover:text-accent-hover"
               >
                 {copied ? (
                   <>
-                    <CheckCircle2 className="w-4 h-4" />
+                    <CheckCircle2 className="h-4 w-4" />
                     Copied!
                   </>
                 ) : (
                   <>
-                    <Copy className="w-4 h-4" />
+                    <Copy className="h-4 w-4" />
                     Copy
                   </>
                 )}
               </button>
             </div>
-            <pre className="w-full px-4 py-3 border border-[rgba(255,255,255,0.05)] rounded-lg bg-[#0A0E1A] text-gray-300 font-mono text-xs overflow-x-auto">
+            <pre className="w-full overflow-x-auto rounded-lg border border-[rgba(11,18,32,0.08)] bg-canvas px-4 py-3 font-mono text-xs text-ink-soft">
               {generateCurl() || "Select method and endpoint to generate cURL"}
             </pre>
           </div>
         </div>
 
-        {/* Response Viewer */}
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
-              <DocumentTextIcon className="w-5 h-5" />
+            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-ink">
+              <DocumentTextIcon className="h-5 w-5" />
               Response
             </label>
-            <div className="w-full h-96 px-4 py-3 border border-[rgba(255,255,255,0.05)] rounded-lg bg-[#0A0E1A] text-gray-300 font-mono text-xs overflow-auto">
+            <div className="h-96 w-full overflow-auto rounded-lg border border-[rgba(11,18,32,0.08)] bg-canvas px-4 py-3 font-mono text-xs text-ink-soft">
               {response ? (
                 <pre className="whitespace-pre-wrap">
                   {JSON.stringify(response, null, 2)}
                 </pre>
               ) : (
-                <div className="text-gray-500 text-center py-12">
+                <div className="py-12 text-center text-ink-faint">
                   Send a request to see the response here
                 </div>
               )}
             </div>
           </div>
 
-          {/* Request History */}
           {requestHistory.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="mb-2 block text-sm font-medium text-ink">
                 Request History
               </label>
-              <div className="space-y-2 max-h-32 overflow-y-auto">
+              <div className="max-h-32 space-y-2 overflow-y-auto">
                 {requestHistory.map((req, idx) => (
                   <button
                     key={idx}
+                    type="button"
                     onClick={() => setResponse(req)}
-                    className="w-full text-left px-3 py-2 border border-[rgba(255,255,255,0.05)] rounded-lg bg-[#0A0E1A] hover:border-[rgba(79,127,255,0.2)] transition-all"
+                    className="w-full rounded-lg border border-[rgba(11,18,32,0.08)] bg-canvas px-3 py-2 text-left transition-all hover:border-accent/40"
                   >
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-[#4F7FFF] font-medium">
-                        {req.method}
-                      </span>
-                      <span className="text-gray-400">{req.path}</span>
+                      <span className="font-medium text-accent">{req.method}</span>
+                      <span className="text-ink-muted">{req.path}</span>
                       <span
-                        className={`${
+                        className={
                           req.status >= 200 && req.status < 300
-                            ? "text-[#10B981]"
-                            : "text-red-400"
-                        }`}
+                            ? "text-emerald-600"
+                            : "text-red-600"
+                        }
                       >
                         {req.status}
                       </span>

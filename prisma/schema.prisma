@@ -12,23 +12,24 @@ datasource db {
 }
 
 model User {
-  id            String        @id @default(cuid())
-  name          String?
-  email         String        @unique
-  emailVerified DateTime?
-  image         String?
-  role          String        @default("user") // user, admin, provider
-  accounts      Account[]
-  sessions      Session[]
-  apis          API[]
-  apiKeys       APIKey[]
-  subscriptions Subscription[]
-  reviews       Review[]
-  invoices      Invoice[]
-  payouts       Payout[]
-  tickets       Ticket[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id                String        @id @default(cuid())
+  name              String?
+  email             String        @unique
+  emailVerified     DateTime?
+  image             String?
+  role              String        @default("user") // user, admin, provider
+  stripeCustomerId  String?       @unique
+  accounts          Account[]
+  sessions          Session[]
+  apis              API[]
+  apiKeys           APIKey[]
+  subscriptions     Subscription[]
+  reviews           Review[]
+  invoices          Invoice[]
+  payouts           Payout[]
+  tickets           Ticket[]
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 }
 
 model Account {
@@ -70,6 +71,7 @@ model API {
   description   String        @db.Text
   category      String
   logo          String?
+  baseUrl       String?       // Upstream URL for gateway proxy (fallback: OpenAPI servers[0])
   isPublic      Boolean       @default(true)
   isApproved    Boolean       @default(false)
   isFeatured    Boolean       @default(false)
@@ -111,7 +113,8 @@ model Endpoint {
 
 model APIKey {
   id          String       @id @default(cuid())
-  key         String       @unique
+  key         String       @unique // hashed key (sha256); plaintext shown once on create
+  keyPrefix   String?      // e.g. ara_xxxx for display/lookup hint
   name        String
   userId      String
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -124,6 +127,7 @@ model APIKey {
   requestLogs RequestLog[]
   createdAt   DateTime     @default(now())
   expiresAt   DateTime?
+  @@index([keyPrefix])
 }
 
 model Subscription {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
+import { getServerSession } from "@/lib/get-session";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
@@ -9,6 +9,7 @@ const updateAPISchema = z.object({
   description: z.string().min(1).optional(),
   category: z.string().min(1).optional(),
   logo: z.string().optional(),
+  baseUrl: z.string().url().optional().or(z.literal("")),
   isPublic: z.boolean().optional(),
 });
 
@@ -123,7 +124,7 @@ export async function PATCH(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid input", details: error.errors },
+        { error: "Invalid input", details: error.issues },
         { status: 400 }
       );
     }

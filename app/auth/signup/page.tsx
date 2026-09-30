@@ -56,8 +56,8 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0E1A] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen bg-[#0A0E1A] flex items-center justify-center py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-[rgba(21,27,43,0.5)] backdrop-blur-[20px] border border-[rgba(255,255,255,0.08)] rounded-2xl p-8 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
             Create your account
@@ -89,7 +89,7 @@ export default function SignUpPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full pl-10 pr-4 py-3 border border-[rgba(255,255,255,0.05)] rounded-lg bg-[#151B2B] text-white placeholder-gray-500 focus:ring-2 focus:ring-[#4F7FFF] focus:border-transparent outline-none"
-                  placeholder="John Doe"
+                  placeholder="Your full name"
                 />
               </div>
             </div>
@@ -109,7 +109,7 @@ export default function SignUpPage() {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full pl-10 pr-4 py-3 border border-[rgba(255,255,255,0.05)] rounded-lg bg-[#151B2B] text-white placeholder-gray-500 focus:ring-2 focus:ring-[#4F7FFF] focus:border-transparent outline-none"
-                  placeholder="you@example.com"
+                  placeholder="name@company.com"
                 />
               </div>
             </div>
@@ -181,16 +181,6 @@ export default function SignUpPage() {
             </p>
           </div>
 
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[rgba(255,255,255,0.05)]"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-[#0A0E1A] text-gray-400">Or continue with</span>
-              </div>
-            </div>
-          </div>
         </form>
       </div>
     </div>

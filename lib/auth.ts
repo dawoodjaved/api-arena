@@ -1,4 +1,4 @@
-import { NextAuthOptions } from "next-auth";
+import NextAuth from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "./prisma";
 import GoogleProvider from "next-auth/providers/google";
@@ -6,7 +6,14 @@ import GitHubProvider from "next-auth/providers/github";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 
-export const authOptions: NextAuthOptions = {
+function isOAuthConfigured(id?: string, secret?: string) {
+  if (!id?.trim() || !secret?.trim()) return false;
+  const bad = (v: string) =>
+    /placeholder|your_|xxx|changeme/i.test(v) || v.length < 8;
+  return !bad(id) && !bad(secret);
+}
+
+export const authOptions = {
   adapter: PrismaAdapter(prisma) as any,
   providers: [
     CredentialsProvider({
@@ -14,8 +21,9 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        remember: { label: "Remember me", type: "text" },
       },
-      async authorize(credentials) {
+      async authorize(credentials: any) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Email and password are required");
         }
@@ -28,7 +36,6 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid email or password");
         }
 
-        // Check if user has a password (stored in Account table for credentials provider)
         const account = await prisma.account.findFirst({
           where: {
             userId: user.id,
@@ -40,15 +47,20 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Please sign up first");
         }
 
-        // Verify password
         const isValid = await bcrypt.compare(
           credentials.password,
-          account.access_token || ""
+          (account.access_token as string) || ""
         );
 
         if (!isValid) {
           throw new Error("Invalid email or password");
         }
+
+        const remember =
+          credentials.remember === true ||
+          credentials.remember === "true" ||
+          credentials.remember === "on" ||
+          credentials.remember === "1";
 
         return {
           id: user.id,
@@ -56,49 +68,137 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           image: user.image,
           role: user.role,
+          rememberMe: remember,
         };
       },
     }),
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-      allowDangerousEmailAccountLinking: true,
-    }),
-    GitHubProvider({
-      clientId: process.env.GITHUB_CLIENT_ID || "",
-      clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
-      allowDangerousEmailAccountLinking: true,
-    }),
+    ...(isOAuthConfigured(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET
+    )
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID!,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+            allowDangerousEmailAccountLinking: true,
+          }),
+        ]
+      : []),
+    ...(isOAuthConfigured(
+      process.env.GITHUB_CLIENT_ID,
+      process.env.GITHUB_CLIENT_SECRET
+    )
+      ? [
+          GitHubProvider({
+            clientId: process.env.GITHUB_CLIENT_ID!,
+            clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+            allowDangerousEmailAccountLinking: true,
+          }),
+        ]
+      : []),
   ],
   callbacks: {
-    async session({ session, user }) {
-      if (session.user) {
-        const dbUser = await prisma.user.findUnique({
-          where: { email: session.user.email! },
-        });
-        if (dbUser) {
-          session.user.id = dbUser.id;
-          session.user.role = dbUser.role;
+    async jwt({ token, user }: any) {
+      try {
+        if (user) {
+          token.id = user.id;
+          token.role = user.role ?? "user";
+          token.email = user.email;
+          const maxAge =
+            user.rememberMe === false ? 12 * 60 * 60 : 30 * 24 * 60 * 60;
+          token.exp = Math.floor(Date.now() / 1000) + maxAge;
         }
+        if (token.email && !token.role) {
+          try {
+            const dbUser = await prisma.user.findUnique({
+              where: { email: token.email as string },
+            });
+            if (dbUser) {
+              token.id = dbUser.id;
+              token.role = dbUser.role;
+            }
+          } catch (e) {
+            if (process.env.NODE_ENV === "development") {
+              console.error("JWT callback DB error:", e);
+            }
+          }
+        }
+        return token;
+      } catch (err) {
+        if (process.env.NODE_ENV === "development") {
+          console.error("JWT callback error:", err);
+        }
+        return token;
       }
-      return session;
     },
-    async signIn({ user, account, profile }) {
-      // For credentials provider, create session in database
-      if (account?.provider === "credentials") {
-        return true;
+    async session({ session, token }: any) {
+      try {
+        if (!session?.user || !token) {
+          return session ?? null;
+        }
+        const userId = (token.id ?? token.sub ?? "") as string;
+        const role = (token.role as string) || "user";
+        session.user.id = userId || "";
+        session.user.role = role;
+
+        const email = session.user.email;
+        if (email && typeof email === "string") {
+          try {
+            const dbUser = await prisma.user.findUnique({
+              where: { email },
+            });
+            if (dbUser) {
+              session.user.id = dbUser.id;
+              session.user.role = dbUser.role;
+              session.user.name = dbUser.name ?? session.user.name ?? null;
+              session.user.image = dbUser.image ?? session.user.image ?? null;
+            }
+          } catch (dbError) {
+            if (process.env.NODE_ENV === "development") {
+              console.error("Error fetching user in session callback:", dbError);
+            }
+          }
+        }
+        return session;
+      } catch (err) {
+        if (process.env.NODE_ENV === "development") {
+          console.error("Session callback error:", err);
+        }
+        return session ?? null;
       }
-      // For OAuth providers
-      return true;
+    },
+    async signIn({ user, account }: any) {
+      try {
+        if (account?.provider === "credentials") return true;
+        if (user?.email) return true;
+        return false;
+      } catch (error) {
+        if (process.env.NODE_ENV === "development") {
+          console.error("SignIn callback error:", error);
+        }
+        return false;
+      }
+    },
+    async redirect({ url, baseUrl }: any) {
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      if (new URL(url).origin === baseUrl) return url;
+      return baseUrl;
     },
   },
   pages: {
     signIn: "/auth/signin",
-    error: "/auth/error",
+    error: "/auth/signin",
   },
   session: {
-    strategy: "database",
+    strategy: "jwt" as const,
+    maxAge: 30 * 24 * 60 * 60,
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret:
+    process.env.AUTH_SECRET ||
+    process.env.NEXTAUTH_SECRET ||
+    "fallback-secret-change-in-production",
   debug: process.env.NODE_ENV === "development",
+  trustHost: true,
 };
+
+export const { handlers, auth, signIn, signOut } = NextAuth(authOptions as any);

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { useSession } from "next-auth/react";
+import Link from "next/link";
 import {
   LineChart,
   Line,
@@ -15,182 +15,120 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from "recharts";
 
-const COLORS = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6"];
+const COLORS = ["#10b981", "#f59e0b", "#ef4444"];
 
 export default function AnalyticsPage() {
   const params = useParams();
-  const { data: session } = useSession();
   const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    if (params.apiId) {
-      fetchAnalytics();
-    }
-  }, [params.apiId]);
-
-  const fetchAnalytics = async () => {
-    try {
-      const res = await fetch(`/api/analytics/${params.apiId}`);
-      if (res.ok) {
-        const data = await res.json();
+    if (!params.apiId) return;
+    fetch(`/api/analytics/${params.apiId}`)
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Failed");
         setAnalytics(data);
-      }
-    } catch (error) {
-      console.error("Error fetching analytics:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [params.apiId]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0A0E1A] flex items-center justify-center text-gray-400">
+        Loading…
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#0A0E1A] flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
+          <p className="text-red-400 mb-4">{error}</p>
+          <Link href="/dashboard" className="text-[#4F7FFF]">
+            Back
+          </Link>
         </div>
       </div>
     );
   }
 
-  // Mock data for demonstration
-  const requestData = [
-    { date: "2024-01-01", requests: 1200 },
-    { date: "2024-01-02", requests: 1900 },
-    { date: "2024-01-03", requests: 3000 },
-    { date: "2024-01-04", requests: 2780 },
-    { date: "2024-01-05", requests: 1890 },
-    { date: "2024-01-06", requests: 2390 },
-    { date: "2024-01-07", requests: 3490 },
-  ];
-
-  const statusCodeData = [
-    { name: "2xx", value: 9500, color: "#10b981" },
-    { name: "4xx", value: 300, color: "#f59e0b" },
-    { name: "5xx", value: 200, color: "#ef4444" },
-  ];
-
-  const endpointData = [
-    { endpoint: "/users", requests: 4500 },
-    { endpoint: "/products", requests: 3200 },
-    { endpoint: "/orders", requests: 2800 },
-    { endpoint: "/analytics", requests: 1200 },
-  ];
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-8">
-          API Analytics
-        </h1>
+    <div className="min-h-screen bg-[#0A0E1A]">
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        <h1 className="text-4xl font-bold text-white mb-8">API Analytics</h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-              Total Requests
-            </h3>
-            <p className="text-3xl font-bold text-gray-900 dark:text-white">
-              {analytics?.totalRequests || "10,000"}
-            </p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-              Success Rate
-            </h3>
-            <p className="text-3xl font-bold text-green-600">
-              {analytics?.successRate || "95"}%
-            </p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-              Avg Latency
-            </h3>
-            <p className="text-3xl font-bold text-gray-900 dark:text-white">
-              {analytics?.avgLatency || "125"}ms
-            </p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-              Revenue
-            </h3>
-            <p className="text-3xl font-bold text-gray-900 dark:text-white">
-              ${analytics?.revenue || "0"}
-            </p>
-          </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          {[
+            { label: "Requests", value: analytics?.totalRequests ?? 0 },
+            { label: "Success rate", value: `${analytics?.successRate ?? 0}%` },
+            { label: "Avg latency", value: `${analytics?.avgLatency ?? 0}ms` },
+            { label: "MRR (est.)", value: `$${analytics?.revenue ?? 0}` },
+          ].map((c) => (
+            <div
+              key={c.label}
+              className="rounded-xl p-5 bg-[#151B2B] border border-[rgba(255,255,255,0.05)]"
+            >
+              <p className="text-xs text-gray-400 uppercase mb-2">{c.label}</p>
+              <p className="text-3xl font-bold text-white">{c.value}</p>
+            </div>
+          ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              Requests Over Time
-            </h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={requestData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="rounded-2xl p-6 bg-[#151B2B] border border-[rgba(255,255,255,0.05)]">
+            <h2 className="text-white font-semibold mb-4">Requests over time</h2>
+            <ResponsiveContainer width="100%" height={240}>
+              <LineChart data={analytics?.daily || []}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#222" />
+                <XAxis dataKey="date" stroke="#666" fontSize={11} />
+                <YAxis stroke="#666" fontSize={11} />
                 <Tooltip />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="requests"
-                  stroke="#3b82f6"
-                  name="Requests"
-                />
+                <Line type="monotone" dataKey="requests" stroke="#4F7FFF" dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              Status Code Distribution
-            </h2>
-            <ResponsiveContainer width="100%" height={300}>
+          <div className="rounded-2xl p-6 bg-[#151B2B] border border-[rgba(255,255,255,0.05)]">
+            <h2 className="text-white font-semibold mb-4">Status codes</h2>
+            <ResponsiveContainer width="100%" height={240}>
               <PieChart>
                 <Pie
-                  data={statusCodeData}
+                  data={analytics?.statusCodeData || []}
+                  dataKey="value"
+                  nameKey="name"
                   cx="50%"
                   cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) =>
-                    `${name} ${(percent * 100).toFixed(0)}%`
-                  }
                   outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
+                  label
                 >
-                  {statusCodeData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={entry.color}
-                    />
+                  {(analytics?.statusCodeData || []).map((_: any, i: number) => (
+                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip />
               </PieChart>
             </ResponsiveContainer>
           </div>
-        </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-            Requests by Endpoint
-          </h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={endpointData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="endpoint" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="requests" fill="#3b82f6" name="Requests" />
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="md:col-span-2 rounded-2xl p-6 bg-[#151B2B] border border-[rgba(255,255,255,0.05)]">
+            <h2 className="text-white font-semibold mb-4">Top endpoints</h2>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={analytics?.endpoints || []}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#222" />
+                <XAxis dataKey="endpoint" stroke="#666" fontSize={10} />
+                <YAxis stroke="#666" fontSize={11} />
+                <Tooltip />
+                <Bar dataKey="requests" fill="#4F7FFF" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
     </div>

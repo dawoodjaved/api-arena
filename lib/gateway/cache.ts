@@ -1,11 +1,11 @@
 import redis from "../redis";
 
-export async function getCachedResponse(
-  key: string
-): Promise<any | null> {
-  const cached = await redis.get(key);
-  if (cached) {
-    return JSON.parse(cached);
+export async function getCachedResponse(key: string): Promise<any | null> {
+  try {
+    const cached = await redis.get(key);
+    if (cached) return JSON.parse(cached);
+  } catch (error) {
+    console.warn("[cache] get failed", error);
   }
   return null;
 }
@@ -15,13 +15,21 @@ export async function setCachedResponse(
   data: any,
   ttl: number = 3600
 ): Promise<void> {
-  await redis.setex(key, ttl, JSON.stringify(data));
+  try {
+    await redis.setex(key, ttl, JSON.stringify(data));
+  } catch (error) {
+    console.warn("[cache] set failed", error);
+  }
 }
 
 export async function invalidateCache(pattern: string): Promise<void> {
-  const keys = await redis.keys(pattern);
-  if (keys.length > 0) {
-    await redis.del(...keys);
+  try {
+    const keys = await redis.keys(pattern);
+    if (keys.length > 0) {
+      await redis.del(...keys);
+    }
+  } catch (error) {
+    console.warn("[cache] invalidate failed", error);
   }
 }
 
@@ -38,5 +46,7 @@ export function generateCacheKey(
         .map(([k, v]) => `${k}=${v}`)
         .join("&")
     : "";
-  return `cache:${apiId}:${version}:${method}:${path}${paramStr ? `?${paramStr}` : ""}`;
+  return `cache:${apiId}:${version}:${method}:${path}${
+    paramStr ? `?${paramStr}` : ""
+  }`;
 }

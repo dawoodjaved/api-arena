@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { validateApiKey } from "@/lib/gateway/auth";
+import { validateApiKey, hasScope } from "@/lib/gateway/auth";
 import { checkRateLimit } from "@/lib/gateway/rate-limiter";
-import { getCachedResponse, setCachedResponse, generateCacheKey } from "@/lib/gateway/cache";
+import {
+  getCachedResponse,
+  setCachedResponse,
+  generateCacheKey,
+} from "@/lib/gateway/cache";
 import { handleCors } from "@/lib/gateway/cors";
 import { getKongGateway } from "@/lib/gateway/kong";
 import { prisma } from "@/lib/prisma";
@@ -49,50 +53,74 @@ export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, { status: 403 });
 }
 
+function matchEndpointPath(
+  registered: string,
+  actual: string
+): boolean {
+  if (registered === actual) return true;
+  const regParts = registered.split("/").filter(Boolean);
+  const actParts = actual.split("/").filter(Boolean);
+  if (regParts.length !== actParts.length) return false;
+  return regParts.every(
+    (p, i) => p.startsWith("{") || p.startsWith(":") || p === actParts[i]
+  );
+}
+
+function resolveUpstream(
+  api: { baseUrl: string | null },
+  openApiSpec: any
+): string | null {
+  if (api.baseUrl) return api.baseUrl.replace(/\/$/, "");
+  const serverUrl = openApiSpec?.servers?.[0]?.url;
+  if (typeof serverUrl === "string" && serverUrl) {
+    return serverUrl.replace(/\/$/, "");
+  }
+  return null;
+}
+
 async function handleGatewayRequest(
   request: NextRequest,
   method: string,
   slug: string[]
 ) {
   const startTime = Date.now();
-
-  // Handle CORS
   const origin = request.headers.get("origin");
-  const corsHeaders = handleCors(origin);
+  const corsHeaders = handleCors(origin) || {};
 
-  // Extract API key
   const apiKey =
     request.headers.get("X-API-Key") ||
-    request.headers.get("Authorization")?.replace("Bearer ", "");
+    request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
 
   if (!apiKey) {
     return NextResponse.json(
       { error: "API key required" },
-      { status: 401, headers: corsHeaders || {} }
+      { status: 401, headers: corsHeaders }
     );
   }
 
-  // Validate API key
   const keyValidation = await validateApiKey(apiKey);
   if (!keyValidation.valid) {
     return NextResponse.json(
       { error: "Invalid API key" },
-      { status: 401, headers: corsHeaders || {} }
+      { status: 401, headers: corsHeaders }
     );
   }
 
-  // Check rate limit
+  if (!hasScope(keyValidation.scopes, method)) {
+    return NextResponse.json(
+      { error: "Insufficient scope for this method" },
+      { status: 403, headers: corsHeaders }
+    );
+  }
+
   const rateLimit = await checkRateLimit(
-    apiKey,
+    keyValidation.keyId || apiKey,
     (keyValidation.plan || "free") as "free" | "pro" | "enterprise"
   );
 
   if (!rateLimit.allowed) {
     return NextResponse.json(
-      {
-        error: "Rate limit exceeded",
-        resetAt: rateLimit.resetAt,
-      },
+      { error: "Rate limit exceeded", resetAt: rateLimit.resetAt },
       {
         status: 429,
         headers: {
@@ -104,54 +132,65 @@ async function handleGatewayRequest(
     );
   }
 
-  // Parse slug to get API and version
-  // Format: /api/gateway/{apiSlug}/{version}/...
   if (slug.length < 2) {
     return NextResponse.json(
-      { error: "Invalid API path" },
-      { status: 400, headers: corsHeaders || {} }
+      { error: "Invalid API path. Use /api/gateway/{slug}/{version}/..." },
+      { status: 400, headers: corsHeaders }
     );
   }
 
   const [apiSlug, version, ...pathParts] = slug;
   const path = "/" + pathParts.join("/");
+  const query = request.nextUrl.search;
 
-  // Find API and version
   const api = await prisma.aPI.findUnique({
     where: { slug: apiSlug },
     include: {
-      versions: {
-        where: { version },
-      },
+      versions: { where: { version } },
     },
   });
 
   if (!api || api.versions.length === 0) {
     return NextResponse.json(
       { error: "API not found" },
-      { status: 404, headers: corsHeaders || {} }
+      { status: 404, headers: corsHeaders }
+    );
+  }
+
+  if (keyValidation.apiId && keyValidation.apiId !== api.id) {
+    return NextResponse.json(
+      { error: "API key is not authorized for this API" },
+      { status: 403, headers: corsHeaders }
     );
   }
 
   const apiVersion = api.versions[0];
+  const deprecationHeaders: Record<string, string> = {};
+  if (apiVersion.isDeprecated) {
+    deprecationHeaders["Deprecation"] = "true";
+    if (apiVersion.deprecationDate) {
+      deprecationHeaders["Sunset"] = apiVersion.deprecationDate.toUTCString();
+    }
+  }
 
-  // Find endpoint
-  const endpoint = await prisma.endpoint.findFirst({
-    where: {
-      versionId: apiVersion.id,
-      method: method,
-      path: path,
-    },
+  const endpoints = await prisma.endpoint.findMany({
+    where: { versionId: apiVersion.id, method },
   });
+  const endpoint =
+    endpoints.find((e) => matchEndpointPath(e.path, path)) || null;
 
   if (!endpoint) {
     return NextResponse.json(
       { error: "Endpoint not found" },
-      { status: 404, headers: corsHeaders || {} }
+      { status: 404, headers: corsHeaders }
     );
   }
 
-  // Check cache for GET requests
+  let requestBodyText: string | undefined;
+  if (method !== "GET" && method !== "HEAD") {
+    requestBodyText = await request.text();
+  }
+
   if (method === "GET") {
     const cacheKey = generateCacheKey(
       api.id,
@@ -165,6 +204,7 @@ async function handleGatewayRequest(
       return NextResponse.json(cached, {
         headers: {
           ...corsHeaders,
+          ...deprecationHeaders,
           "X-Cache": "HIT",
           "X-RateLimit-Remaining": String(rateLimit.remaining),
         },
@@ -172,54 +212,77 @@ async function handleGatewayRequest(
     }
   }
 
-  // Try to use Kong Gateway if available, otherwise use custom gateway
+  let statusCode = 200;
   let responseData: any;
-  let useKong = false;
+  let responseText: string | null = null;
+
+  const upstream = resolveUpstream(api, apiVersion.openApiSpec);
+  // Never forward the Arena API key to upstream — it was only used for gateway auth.
+  const forwardHeaders: Record<string, string> = {
+    "Content-Type": request.headers.get("content-type") || "application/json",
+    Accept: request.headers.get("accept") || "application/json",
+    "User-Agent": "APIArena-Gateway/1.0",
+  };
+  if (keyValidation.userId) {
+    forwardHeaders["X-APIArena-User-Id"] = keyValidation.userId;
+  }
+  if (keyValidation.keyId) {
+    forwardHeaders["X-APIArena-Key-Id"] = keyValidation.keyId;
+  }
 
   try {
     const kong = getKongGateway();
     const kongAvailable = await kong.isAvailable();
 
     if (kongAvailable) {
-      // Use Kong Gateway for better performance
-      useKong = true;
-      const kongUrl = kong.getApiUrl(apiSlug, path);
-      
-      // Forward request through Kong
+      const kongUrl = kong.getApiUrl(apiSlug, path) + query;
       const forwardResponse = await fetch(kongUrl, {
-        method: method,
-        headers: {
-          "X-API-Key": apiKey,
-          ...Object.fromEntries(request.headers.entries()),
-        },
-        body: method !== "GET" ? await request.text() : undefined,
+        method,
+        headers: forwardHeaders,
+        body: requestBodyText,
       });
-
-      responseData = await forwardResponse.json();
+      statusCode = forwardResponse.status;
+      responseText = await forwardResponse.text();
+      try {
+        responseData = JSON.parse(responseText);
+      } catch {
+        responseData = { raw: responseText };
+      }
+    } else if (upstream) {
+      const targetUrl = `${upstream}${path}${query}`;
+      const forwardResponse = await fetch(targetUrl, {
+        method,
+        headers: forwardHeaders,
+        body: requestBodyText,
+      });
+      statusCode = forwardResponse.status;
+      responseText = await forwardResponse.text();
+      try {
+        responseData = JSON.parse(responseText);
+      } catch {
+        responseData = { raw: responseText };
+      }
     } else {
-      // Fallback to custom gateway
+      statusCode = 200;
       responseData = {
-        message: "Request processed",
+        message: "Request accepted (no upstream configured)",
         api: api.name,
-        version: version,
+        version,
         endpoint: path,
-        method: method,
+        method,
+        hint: "Set baseUrl on the API or servers[0].url in the OpenAPI spec to proxy upstream.",
       };
     }
-  } catch (error) {
-    // Fallback to custom gateway on error
-    console.warn("Kong Gateway error, using fallback:", error);
+  } catch (error: any) {
+    console.warn("Gateway proxy error:", error);
+    statusCode = 502;
     responseData = {
-      message: "Request processed",
-      api: api.name,
-      version: version,
-      endpoint: path,
-      method: method,
+      error: "Upstream request failed",
+      detail: error?.message || "Unknown error",
     };
   }
 
-  // Cache GET responses
-  if (method === "GET") {
+  if (method === "GET" && statusCode >= 200 && statusCode < 300) {
     const cacheKey = generateCacheKey(
       api.id,
       version,
@@ -230,30 +293,55 @@ async function handleGatewayRequest(
     await setCachedResponse(cacheKey, responseData, 3600);
   }
 
-  // Log request
   const latency = Date.now() - startTime;
-  const body = method !== "GET" ? await request.json().catch(() => null) : null;
+  let requestBodyJson: any = null;
+  if (requestBodyText) {
+    try {
+      requestBodyJson = JSON.parse(requestBodyText);
+    } catch {
+      requestBodyJson = { raw: requestBodyText.slice(0, 2000) };
+    }
+  }
 
   if (keyValidation.keyId) {
     await prisma.requestLog.create({
       data: {
         apiKeyId: keyValidation.keyId,
         endpointId: endpoint.id,
-        method: method,
-        path: path,
-        statusCode: 200,
-        latency: latency,
+        method,
+        path,
+        statusCode,
+        latency,
         ipAddress: request.headers.get("x-forwarded-for") || "unknown",
         userAgent: request.headers.get("user-agent") || null,
-        requestBody: body,
-        responseBody: responseData,
+        requestBody: requestBodyJson,
+        responseBody:
+          typeof responseData === "object"
+            ? responseData
+            : { raw: String(responseData).slice(0, 2000) },
+      },
+    });
+  }
+
+  if (responseText !== null && typeof responseData?.raw === "string") {
+    return new NextResponse(responseText, {
+      status: statusCode,
+      headers: {
+        ...corsHeaders,
+        ...deprecationHeaders,
+        "Content-Type": "text/plain",
+        "X-RateLimit-Remaining": String(rateLimit.remaining),
+        "X-RateLimit-Reset": String(rateLimit.resetAt),
+        "X-Cache": "MISS",
       },
     });
   }
 
   return NextResponse.json(responseData, {
+    status: statusCode,
     headers: {
       ...corsHeaders,
+      ...deprecationHeaders,
       "X-RateLimit-Remaining": String(rateLimit.remaining),
       "X-RateLimit-Reset": String(rateLimit.resetAt),
       "X-Cache": "MISS",

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { Star, ExternalLink } from "lucide-react";
 import { useState } from "react";
-import { LoadingAnimation } from "../animations/LoadingAnimation";
 
 interface APICardProps {
   api: {
@@ -14,88 +13,72 @@ interface APICardProps {
     category: string;
     rating: number;
     reviewCount: number;
-    logo?: string;
+    logo?: string | null;
     pricing?: { free: boolean; pro?: number; enterprise?: boolean };
     externalLink?: string;
   };
 }
 
 export function APICard({ api }: APICardProps) {
-  const [imageLoading, setImageLoading] = useState(true);
-  const [hovered, setHovered] = useState(false);
+  const [imgFailed, setImgFailed] = useState(false);
+  const rating = Number.isFinite(api.rating) ? api.rating : 0;
+  const reviews = api.reviewCount || 0;
+  const showLogo = Boolean(api.logo) && !imgFailed;
 
   return (
     <Link
       href={`/marketplace/api/${api.slug}`}
-      className="block bg-[#151B2B] border border-[rgba(255,255,255,0.05)] rounded-2xl p-8 shadow-[0_4px_24px_rgba(0,0,0,0.2)] hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(79,127,255,0.15)] hover:border-[rgba(79,127,255,0.2)] transition-all group"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      className="group block border-b border-[rgba(11,18,32,0.08)] py-6 transition-colors hover:bg-accent-soft/40 sm:px-3"
     >
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          {api.logo ? (
-            <div className="relative w-12 h-12 rounded-lg overflow-hidden">
-              {imageLoading && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <LoadingAnimation size={48} />
-                </div>
-              )}
-              <img
-                src={api.logo}
-                alt={api.name}
-                className="w-12 h-12 rounded-lg object-cover"
-                onLoad={() => setImageLoading(false)}
-                onError={() => setImageLoading(false)}
-                style={{ display: imageLoading ? "none" : "block" }}
-              />
-            </div>
-          ) : (
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[#4F7FFF] to-[#8B5CF6] flex items-center justify-center text-white font-bold text-lg group-hover:scale-110 transition-transform">
-              {api.name.charAt(0).toUpperCase()}
-            </div>
-          )}
-          <div>
-            <h3 className="text-xl font-semibold text-white group-hover:text-[#6B92FF] transition-colors">
-              {api.name}
-            </h3>
-            <span className="text-sm text-gray-400">{api.category}</span>
+      <div className="flex items-start gap-4">
+        {showLogo ? (
+          <img
+            src={api.logo!}
+            alt={`${api.name} logo`}
+            className="h-11 w-11 rounded-md object-cover bg-accent-soft"
+            onError={() => setImgFailed(true)}
+          />
+        ) : (
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-accent-soft font-display text-lg font-bold text-accent">
+            {api.name.charAt(0).toUpperCase()}
           </div>
-        </div>
-        {api.externalLink && (
-          <a
-            href={api.externalLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="text-gray-400 hover:text-[#4F7FFF] transition-colors"
-          >
-            <ExternalLink className="w-4 h-4" />
-          </a>
         )}
-      </div>
-
-      <p className="text-gray-400 mb-4 line-clamp-2">{api.description}</p>
-
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1">
-          <Star className="w-4 h-4 fill-[#10B981] text-[#10B981]" />
-          <span className="text-sm font-medium text-white">
-            {api.rating.toFixed(1)}
-          </span>
-          <span className="text-sm text-gray-400">({api.reviewCount})</span>
-        </div>
-
-        <div className="flex gap-2">
-          {api.pricing?.free && (
-            <span className="px-2 py-1 text-xs bg-[#10B981]/20 text-[#10B981] rounded border border-[#10B981]/30">
-              Free
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="font-display text-lg font-semibold text-ink group-hover:text-accent">
+                {api.name}
+              </h3>
+              <p className="mt-0.5 text-xs font-medium uppercase tracking-wide text-ink-faint">
+                {api.category}
+              </p>
+            </div>
+            {api.externalLink && (
+              <span
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.open(api.externalLink, "_blank");
+                }}
+                className="text-ink-faint hover:text-accent"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </span>
+            )}
+          </div>
+          <p className="mt-2 line-clamp-2 text-sm text-ink-muted">
+            {api.description}
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+            <span className="inline-flex items-center gap-1 text-ink-soft">
+              <Star className="h-3.5 w-3.5 fill-accent text-accent" />
+              {rating.toFixed(1)}
+              <span className="text-ink-faint">({reviews})</span>
             </span>
-          )}
-          {api.pricing?.pro && (
-            <span className="px-2 py-1 text-xs bg-[#4F7FFF]/20 text-[#4F7FFF] rounded border border-[#4F7FFF]/30">
-              ${api.pricing.pro}/mo
-            </span>
-          )}
+            <span className="text-xs font-medium text-accent">Free plan</span>
+            {api.pricing?.pro ? (
+              <span className="text-xs text-ink-muted">Pro ${api.pricing.pro}/mo</span>
+            ) : null}
+          </div>
         </div>
       </div>
     </Link>

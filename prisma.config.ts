@@ -10,7 +10,9 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   engine: "classic",
+  // Use direct PostgreSQL connection (not Prisma Cloud/Accelerate)
   datasource: {
     url: env("DATABASE_URL"),
+    directUrl: env("DATABASE_URL"), // Use same URL for direct connection
   },
 });

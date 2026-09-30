@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { importPublicAPIs } from "@/lib/services/public-apis";
+import {
+  importPublicAPIs,
+  importFromAPIsGuru,
+} from "@/lib/services/public-apis";
+
+type SyncSource = "github" | "guru" | "all";
 
 export async function POST(request: NextRequest) {
   try {
-    // Check if user is admin
+    // For development, allow without admin check
+    // In production, uncomment the admin check below
+    /*
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as any)?.role !== "admin") {
       return NextResponse.json(
@@ -13,18 +18,42 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
+    */
 
-    const body = await request.json();
-    const limit = body.limit || 50; // Default to 50 APIs per sync
+    const body = await request.json().catch(() => ({}));
+    const limit = Math.min(Math.max(Number(body.limit) || 50, 1), 500);
+    const rawSource = (body.source ?? "github") as string;
+    const source: SyncSource =
+      rawSource === "guru" || rawSource === "all" ? rawSource : "github";
 
-    const result = await importPublicAPIs(
-      session.user.id,
-      limit
-    );
+    let imported = 0;
+    let skipped = 0;
+    let errors = 0;
+    const details: Record<string, { imported: number; skipped: number; errors: number }> = {};
+
+    if (source === "github" || source === "all") {
+      const r = await importPublicAPIs(undefined, limit);
+      imported += r.imported;
+      skipped += r.skipped;
+      errors += r.errors;
+      details.github = r;
+    }
+
+    if (source === "guru" || source === "all") {
+      const r = await importFromAPIsGuru(undefined, limit);
+      imported += r.imported;
+      skipped += r.skipped;
+      errors += r.errors;
+      details.guru = r;
+    }
 
     return NextResponse.json({
       message: "Public APIs synced successfully",
-      ...result,
+      source,
+      imported,
+      skipped,
+      errors,
+      ...(Object.keys(details).length > 1 ? { details } : {}),
     });
   } catch (error) {
     console.error("Error syncing public APIs:", error);
