@@ -3,6 +3,10 @@ import { getServerSession } from "@/lib/get-session";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import {
+  hydrateApiOpenApi,
+  isStubOnly,
+} from "@/lib/services/openapi-hydrate";
 
 const updateAPISchema = z.object({
   name: z.string().min(1).optional(),
@@ -18,7 +22,8 @@ export async function GET(
   { params }: { params: { apiId: string } }
 ) {
   try {
-    const api = await prisma.aPI.findUnique({
+    const hydrateParam = request.nextUrl.searchParams.get("hydrate");
+    let api = await prisma.aPI.findUnique({
       where: { id: params.apiId },
       include: {
         user: {
@@ -57,7 +62,45 @@ export async function GET(
       return NextResponse.json({ error: "API not found" }, { status: 404 });
     }
 
-    // Ensure reviews is an array
+    const latest = api.versions[0];
+    const needsHydrate =
+      Boolean(api.openapiUrl) &&
+      (hydrateParam === "1" ||
+        hydrateParam === "true" ||
+        isStubOnly(latest?.endpoints || []) ||
+        api.endpointCount < 2);
+
+    if (needsHydrate && api.openapiUrl) {
+      try {
+        await hydrateApiOpenApi(api.id);
+        api = await prisma.aPI.findUnique({
+          where: { id: params.apiId },
+          include: {
+            user: {
+              select: { id: true, name: true, image: true },
+            },
+            versions: {
+              orderBy: { createdAt: "desc" },
+              include: { endpoints: true },
+            },
+            reviews: {
+              include: {
+                user: { select: { name: true, image: true } },
+              },
+              orderBy: { createdAt: "desc" },
+            },
+            _count: { select: { subscriptions: true } },
+          },
+        });
+      } catch (e) {
+        console.warn("Lazy hydrate failed:", e);
+      }
+    }
+
+    if (!api) {
+      return NextResponse.json({ error: "API not found" }, { status: 404 });
+    }
+
     const reviews = Array.isArray(api.reviews) ? api.reviews : [];
     const ratings = reviews.map((r) => r.rating);
     const avgRating =
@@ -65,13 +108,34 @@ export async function GET(
         ? ratings.reduce((a, b) => a + b, 0) / ratings.length
         : 0;
 
+    // Usage signal for reviews context (request logs for this API's keys)
+    const usageCalls = await prisma.requestLog.count({
+      where: { apiKey: { apiId: api.id } },
+    });
+
+    // Keep source/sourceKey internal for sync — do not expose in the public payload
+    const { source: _source, sourceKey: _sourceKey, ...publicApi } = api;
+
+    const sanitizeChangelog = (text: string | null | undefined) => {
+      if (!text) return text;
+      if (/public-apis|apis\.guru|Synced from|Imported from/i.test(text)) {
+        return "Listing updated";
+      }
+      return text;
+    };
+
     return NextResponse.json({
-      ...api,
-      reviews: reviews, // Ensure it's always an array
-      versions: Array.isArray(api.versions) ? api.versions : [], // Ensure it's always an array
+      ...publicApi,
+      tags: (api.tags || []).filter((t) => !t.startsWith("src:")),
+      reviews,
+      versions: (Array.isArray(api.versions) ? api.versions : []).map((v) => ({
+        ...v,
+        changelog: sanitizeChangelog(v.changelog),
+      })),
       rating: avgRating,
       reviewCount: reviews.length,
       subscriberCount: api._count.subscriptions,
+      usageCalls,
     });
   } catch (error) {
     console.error("Error fetching API:", error);

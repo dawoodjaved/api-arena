@@ -1,7 +1,22 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
-export default function Home() {
+async function getCatalogStats() {
+  try {
+    const base = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const res = await fetch(`${base}/api/catalog/stats`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+export default async function Home() {
+  const stats = await getCatalogStats();
+
   return (
     <div className="page-shell">
       {/* Hero — one composition: brand, headline, line, CTAs, product visual */}
@@ -16,17 +31,33 @@ export default function Home() {
               Publish, discover, and ship APIs without the platform sprawl.
             </h1>
             <p className="mt-4 max-w-md text-base text-ink-muted sm:text-lg">
-              OpenAPI docs, keys, playground, and usage—built for providers and developers.
+              Enriched marketplace with Arena Score, OpenAPI docs, keys, playground, and real usage — one loop for providers and developers.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/marketplace" className="btn btn-primary">
                 Browse marketplace
                 <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link href="/api-publisher/new" className="btn btn-secondary">
-                Publish an API
+              <Link href="/auth/signup" className="btn btn-secondary">
+                Get started free
               </Link>
             </div>
+            {stats?.total != null && (
+              <dl className="mt-10 grid max-w-lg grid-cols-3 gap-4 border-t border-[rgba(11,18,32,0.08)] pt-6">
+                <div>
+                  <dt className="text-xs uppercase tracking-wide text-ink-faint">APIs</dt>
+                  <dd className="mt-1 font-display text-2xl font-bold text-ink">{stats.total}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-wide text-ink-faint">Try-ready</dt>
+                  <dd className="mt-1 font-display text-2xl font-bold text-ink">{stats.tryReadyPct}%</dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-wide text-ink-faint">Avg score</dt>
+                  <dd className="mt-1 font-display text-2xl font-bold text-ink">{stats.avgArenaScore}</dd>
+                </div>
+              </dl>
+            )}
           </div>
 
           <div

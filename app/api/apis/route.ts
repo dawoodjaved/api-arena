@@ -20,6 +20,13 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get("category");
     const search = searchParams.get("search");
     const featured = searchParams.get("featured") === "true";
+    const auth = searchParams.get("auth");
+    const openapi = searchParams.get("openapi");
+    const cors = searchParams.get("cors");
+    const tryReady = searchParams.get("tryReady") === "true";
+    const minScore = Number(searchParams.get("minScore") || "0");
+    const sort = searchParams.get("sort") || "score"; // score | newest | name
+    const take = Math.min(Number(searchParams.get("limit") || "100") || 100, 500);
 
     const where: any = {
       isPublic: true,
@@ -34,12 +41,40 @@ export async function GET(request: NextRequest) {
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
         { description: { contains: search, mode: "insensitive" } },
+        { tags: { has: search.toLowerCase() } },
       ];
     }
 
     if (featured) {
       where.isFeatured = true;
     }
+
+    if (auth) {
+      where.authType = auth;
+    }
+
+    if (openapi === "true") {
+      where.hasOpenApi = true;
+    }
+
+    if (tryReady) {
+      where.tryReady = true;
+    }
+
+    if (cors) {
+      where.cors = cors;
+    }
+
+    if (minScore > 0) {
+      where.arenaScore = { gte: minScore };
+    }
+
+    const orderBy =
+      sort === "name"
+        ? { name: "asc" as const }
+        : sort === "newest"
+          ? { createdAt: "desc" as const }
+          : [{ arenaScore: "desc" as const }, { createdAt: "desc" as const }];
 
     const apis = await prisma.aPI.findMany({
       where,
@@ -65,8 +100,8 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: featured ? { createdAt: "desc" } : { createdAt: "desc" },
-      take: 50,
+      orderBy,
+      take,
     });
 
     const apisWithStats = apis.map((api) => {
@@ -76,8 +111,11 @@ export async function GET(request: NextRequest) {
           ? ratings.reduce((a, b) => a + b, 0) / ratings.length
           : 0;
 
+      const { source: _s, sourceKey: _sk, ...rest } = api;
       return {
-        ...api,
+        ...rest,
+        // Hide internal sync tags from the product UI
+        tags: (api.tags || []).filter((t) => !t.startsWith("src:")),
         rating: avgRating,
         reviewCount: api.reviews.length,
         subscriberCount: api._count.subscriptions,

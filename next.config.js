@@ -1,15 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    
-  },
+  // Prisma custom client output — keep out of the webpack bundle on Vercel
+  serverExternalPackages: ["@prisma/client"],
   images: {
-    domains: ["localhost", "api.dicebear.com"],
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "api.dicebear.com",
-      },
+      { protocol: "https", hostname: "api.dicebear.com" },
+      { protocol: "https", hostname: "avatars.githubusercontent.com" },
+      { protocol: "https", hostname: "lh3.googleusercontent.com" },
     ],
   },
   async headers() {

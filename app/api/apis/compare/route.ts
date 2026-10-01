@@ -54,35 +54,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate comparison metrics
-    const comparison = apis.map((api) => {
-      const ratings = api.reviews.map((r) => r.rating);
-      const avgRating =
-        ratings.length > 0
-          ? ratings.reduce((a, b) => a + b, 0) / ratings.length
-          : 0;
+    const comparison = await Promise.all(
+      apis.map(async (api) => {
+        const ratings = api.reviews.map((r) => r.rating);
+        const avgRating =
+          ratings.length > 0
+            ? ratings.reduce((a, b) => a + b, 0) / ratings.length
+            : 0;
 
-      const latestVersion = api.versions[0];
-      const endpointCount = latestVersion?.endpoints.length || 0;
+        const latestVersion = api.versions[0];
+        const endpointCount =
+          api.endpointCount || latestVersion?.endpoints.length || 0;
+        const usageCalls = await prisma.requestLog.count({
+          where: { apiKey: { apiId: api.id } },
+        });
 
-      return {
-        id: api.id,
-        name: api.name,
-        slug: api.slug,
-        description: api.description,
-        category: api.category,
-        logo: api.logo,
-        provider: api.user,
-        avgRating,
-        reviewCount: api.reviews.length,
-        subscriptionCount: api._count.subscriptions,
-        endpointCount,
-        latestVersion: latestVersion?.version || "N/A",
-        isFeatured: api.isFeatured,
-        createdAt: api.createdAt,
-        updatedAt: api.updatedAt,
-      };
-    });
+        return {
+          id: api.id,
+          name: api.name,
+          slug: api.slug,
+          description: api.description,
+          category: api.category,
+          logo: api.logo,
+          provider: api.user,
+          rating: avgRating,
+          avgRating,
+          reviewCount: api.reviews.length,
+          subscriptionCount: api._count.subscriptions,
+          subscriberCount: api._count.subscriptions,
+          endpointCount,
+          arenaScore: api.arenaScore,
+          tryReady: api.tryReady,
+          hasOpenApi: api.hasOpenApi,
+          authType: api.authType,
+          https: api.https,
+          usageCalls,
+          latestVersion: latestVersion?.version || "N/A",
+          isFeatured: api.isFeatured,
+          createdAt: api.createdAt,
+          updatedAt: api.updatedAt,
+        };
+      })
+    );
 
     return NextResponse.json({
       comparison,

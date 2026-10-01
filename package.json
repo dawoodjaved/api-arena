@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "next lint",
     "db:generate": "prisma generate",
@@ -21,6 +22,9 @@
     "catalog:venv": "python3 -m venv scripts/catalog/.venv && scripts/catalog/.venv/bin/pip install -r scripts/catalog/requirements.txt",
     "setup": "bash scripts/setup-local.sh",
     "test": "node scripts/smoke-test.js"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

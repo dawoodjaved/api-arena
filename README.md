@@ -114,16 +114,36 @@ api-arena/
 
 ---
 
-## Deploy (Vercel)
+## Deploy (Vercel — website only)
 
-Designed for **Vercel** + managed Postgres (e.g. Neon) + Redis (e.g. Upstash).
+Standard Next.js project (no multi-service / no Python on Vercel).
 
-1. Push the repo to GitHub and import the project in Vercel.
-2. Set the same env vars as `.env.example` (use your production `NEXTAUTH_URL`).
-3. Point Stripe webhooks at `https://<your-domain>/api/stripe/webhooks`.
-4. After first deploy, run migrations/seed against the production DB (`prisma db push` + `db:seed` from a machine with `DATABASE_URL`).
+1. Push to GitHub → Import in [Vercel](https://vercel.com) → Framework: **Next.js**.
+2. Set environment variables (Production + Preview):
 
-Typical free stack: Neon (Postgres) + Upstash (Redis) + Stripe test mode + Google/GitHub OAuth. Set the same keys in Vercel as in `.env.example`.
+| Variable | Required | Notes |
+|----------|----------|--------|
+| `DATABASE_URL` | Yes | Neon **pooled** connection string (`sslmode=require`) |
+| `NEXTAUTH_SECRET` | Yes | `openssl rand -base64 32` |
+| `AUTH_SECRET` | Yes | Same value as `NEXTAUTH_SECRET` |
+| `NEXTAUTH_URL` | Yes | `https://your-project.vercel.app` (or custom domain) |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional | Add callback `https://…/api/auth/callback/google` |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | Optional | Same for GitHub |
+| `STRIPE_SECRET_KEY` | Optional | Billing |
+| `STRIPE_WEBHOOK_SECRET` | Optional | After deploy, point Stripe webhook to `/api/stripe/webhooks` |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Optional | Billing UI |
+| `REDIS_URL` | Optional | Upstash `rediss://…` (rate limits); works without it |
+
+3. Deploy. Build already runs `prisma generate && next build`.
+4. Apply schema + seed **once** against Neon (from your laptop):
+
+```bash
+# with DATABASE_URL pointing at Neon
+npx prisma db push
+npm run db:seed
+```
+
+Catalog Python sync stays local for later — not part of this deploy.
 
 ---
 

@@ -29,6 +29,9 @@ export function Navbar() {
           <Link href="/marketplace" className={linkClass("/marketplace")}>
             Marketplace
           </Link>
+          <Link href="/marketplace/compare" className={linkClass("/marketplace/compare")}>
+            Compare
+          </Link>
           {session && (
             <>
               <Link href="/dashboard" className={linkClass("/dashboard")}>
@@ -48,12 +51,17 @@ export function Navbar() {
 
         <div className="hidden items-center gap-3 md:flex">
           {session ? (
-            <button
-              onClick={() => signOut({ callbackUrl: "/" })}
-              className="btn btn-ghost"
-            >
-              Sign out
-            </button>
+            <>
+              <Link href="/dashboard" className="btn btn-secondary">
+                My portal
+              </Link>
+              <button
+                onClick={() => signOut({ callbackUrl: "/" })}
+                className="btn btn-ghost"
+              >
+                Sign out
+              </button>
+            </>
           ) : (
             <>
               <Link href="/auth/signin" className="btn btn-ghost">
@@ -80,6 +88,13 @@ export function Navbar() {
           <div className="flex flex-col gap-3">
             <Link href="/marketplace" onClick={() => setMobileMenuOpen(false)} className="py-2 text-ink">
               Marketplace
+            </Link>
+            <Link
+              href="/marketplace/compare"
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-2 text-ink"
+            >
+              Compare
             </Link>
             {session && (
               <>

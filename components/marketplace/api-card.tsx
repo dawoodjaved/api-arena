@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Star, ExternalLink } from "lucide-react";
+import { Star, Shield, FileJson, Lock, Zap } from "lucide-react";
 import { useState } from "react";
 
 interface APICardProps {
@@ -14,9 +14,22 @@ interface APICardProps {
     rating: number;
     reviewCount: number;
     logo?: string | null;
-    pricing?: { free: boolean; pro?: number; enterprise?: boolean };
-    externalLink?: string;
+    authType?: string | null;
+    https?: boolean | null;
+    cors?: string | null;
+    hasOpenApi?: boolean;
+    tryReady?: boolean;
+    endpointCount?: number;
+    arenaScore?: number;
+    docsUrl?: string | null;
+    subscriberCount?: number;
   };
+}
+
+function scoreTone(score: number) {
+  if (score >= 75) return "text-accent";
+  if (score >= 50) return "text-ink-soft";
+  return "text-ink-faint";
 }
 
 export function APICard({ api }: APICardProps) {
@@ -24,6 +37,10 @@ export function APICard({ api }: APICardProps) {
   const rating = Number.isFinite(api.rating) ? api.rating : 0;
   const reviews = api.reviewCount || 0;
   const showLogo = Boolean(api.logo) && !imgFailed;
+  const score = Number.isFinite(api.arenaScore) ? Number(api.arenaScore) : 0;
+  const auth = api.authType || "unknown";
+  const endpoints = api.endpointCount || 0;
+  const tryReady = Boolean(api.tryReady) && endpoints >= 2;
 
   return (
     <Link
@@ -51,33 +68,49 @@ export function APICard({ api }: APICardProps) {
               </h3>
               <p className="mt-0.5 text-xs font-medium uppercase tracking-wide text-ink-faint">
                 {api.category}
+                {endpoints > 0 ? ` · ${endpoints} endpoints` : ""}
               </p>
             </div>
-            {api.externalLink && (
-              <span
-                onClick={(e) => {
-                  e.preventDefault();
-                  window.open(api.externalLink, "_blank");
-                }}
-                className="text-ink-faint hover:text-accent"
-              >
-                <ExternalLink className="h-4 w-4" />
-              </span>
-            )}
+            <div className={`shrink-0 text-right ${scoreTone(score)}`}>
+              <p className="font-display text-lg font-bold leading-none">{score}</p>
+              <p className="mt-0.5 text-[10px] uppercase tracking-wide text-ink-faint">
+                Arena
+              </p>
+            </div>
           </div>
           <p className="mt-2 line-clamp-2 text-sm text-ink-muted">
             {api.description}
           </p>
-          <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
             <span className="inline-flex items-center gap-1 text-ink-soft">
               <Star className="h-3.5 w-3.5 fill-accent text-accent" />
               {rating.toFixed(1)}
               <span className="text-ink-faint">({reviews})</span>
             </span>
-            <span className="text-xs font-medium text-accent">Free plan</span>
-            {api.pricing?.pro ? (
-              <span className="text-xs text-ink-muted">Pro ${api.pricing.pro}/mo</span>
+            {tryReady ? (
+              <span className="inline-flex items-center gap-1 rounded-md border border-accent/30 bg-accent-soft px-1.5 py-0.5 font-medium text-accent">
+                <Zap className="h-3 w-3" />
+                Try-ready
+              </span>
+            ) : api.hasOpenApi ? (
+              <span className="inline-flex items-center gap-1 rounded-md border border-[rgba(11,18,32,0.08)] bg-surface px-1.5 py-0.5 text-ink-muted">
+                <FileJson className="h-3 w-3" />
+                OpenAPI link
+              </span>
             ) : null}
+            {api.https && (
+              <span className="inline-flex items-center gap-1 rounded-md border border-[rgba(11,18,32,0.08)] bg-surface px-1.5 py-0.5 text-ink-muted">
+                <Shield className="h-3 w-3" />
+                HTTPS
+              </span>
+            )}
+            <span className="inline-flex items-center gap-1 rounded-md border border-[rgba(11,18,32,0.08)] bg-surface px-1.5 py-0.5 text-ink-muted">
+              <Lock className="h-3 w-3" />
+              {auth === "none" ? "No auth" : auth}
+            </span>
+            {typeof api.subscriberCount === "number" && api.subscriberCount > 0 && (
+              <span className="text-ink-faint">{api.subscriberCount} subscribers</span>
+            )}
           </div>
         </div>
       </div>

@@ -23,15 +23,16 @@ export default function APIDetailPage() {
   const [subscribed, setSubscribed] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
   const [subscribeMsg, setSubscribeMsg] = useState<string | null>(null);
+  const [quickstarting, setQuickstarting] = useState(false);
 
   const fetchAPI = async () => {
     try {
-      const res = await fetch("/api/apis");
+      const res = await fetch("/api/apis?limit=200&sort=score");
       const apis = await res.json();
       if (Array.isArray(apis)) {
         const found = apis.find((a: any) => a.slug === params.slug);
         if (found) {
-          const detailRes = await fetch(`/api/apis/${found.id}`);
+          const detailRes = await fetch(`/api/apis/${found.id}?hydrate=1`);
           if (detailRes.ok) {
             setApi(await detailRes.json());
           }
@@ -92,6 +93,45 @@ export default function APIDetailPage() {
       setSubscribeMsg("Subscribe failed");
     } finally {
       setSubscribing(false);
+    }
+  };
+
+  const handleQuickstart = async () => {
+    if (!session) {
+      router.push(
+        `/auth/signin?callbackUrl=${encodeURIComponent(
+          `/marketplace/api/${params.slug}`
+        )}`
+      );
+      return;
+    }
+    if (!api?.id || quickstarting) return;
+    setQuickstarting(true);
+    setSubscribeMsg(null);
+    try {
+      const res = await fetch(`/api/apis/${api.id}/quickstart`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setSubscribeMsg(data.error || "Quickstart failed");
+        return;
+      }
+      setSubscribed(true);
+      if (data.apiKey) {
+        setUserKey(data.apiKey);
+        setSubscribeMsg(
+          "Ready: subscribed + key created. Key is filled below — copy it now."
+        );
+      } else {
+        setSubscribeMsg(data.message || "Subscribed. Use your existing API key in the playground.");
+      }
+      setShowPlayground(true);
+      await fetchAPI();
+    } catch {
+      setSubscribeMsg("Quickstart failed");
+    } finally {
+      setQuickstarting(false);
     }
   };
 
@@ -165,6 +205,14 @@ export default function APIDetailPage() {
                   <span className="rounded-full bg-accent-soft px-3 py-1 text-sm text-accent">
                     {api.category}
                   </span>
+                  {api.tryReady && (
+                    <span className="rounded-full border border-accent/30 bg-accent-soft px-3 py-1 text-sm font-medium text-accent">
+                      Try-ready · {api.endpointCount || 0} endpoints
+                    </span>
+                  )}
+                  <span className="rounded-full border border-[rgba(11,18,32,0.08)] px-3 py-1 text-sm text-ink-muted">
+                    Arena {api.arenaScore ?? 0}
+                  </span>
                   {api.user?.name && (
                     <span className="text-sm text-ink-muted">by {api.user.name}</span>
                   )}
@@ -175,6 +223,11 @@ export default function APIDetailPage() {
                     </span>
                     <span className="text-ink-muted">({api.reviewCount || 0})</span>
                   </div>
+                  {typeof api.usageCalls === "number" && (
+                    <span className="text-sm text-ink-faint">
+                      {api.usageCalls} gateway calls
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -203,22 +256,32 @@ export default function APIDetailPage() {
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
+              onClick={handleQuickstart}
+              disabled={quickstarting}
+              className="btn btn-primary disabled:cursor-default disabled:opacity-70"
+            >
+              {quickstarting
+                ? "Setting up…"
+                : "Subscribe + key + try"}
+            </button>
+            <button
+              type="button"
               onClick={handleSubscribe}
               disabled={subscribed || subscribing}
-              className="btn btn-primary disabled:cursor-default disabled:opacity-70"
+              className="btn btn-secondary disabled:cursor-default disabled:opacity-70"
             >
               {subscribed
                 ? "Subscribed"
                 : subscribing
                   ? "Subscribing…"
-                  : "Subscribe"}
+                  : "Subscribe only"}
             </button>
             <button
               type="button"
               onClick={() => setShowPlayground(!showPlayground)}
               className="btn btn-secondary"
             >
-              <Code className="h-5 w-5" /> Try It Out
+              <Code className="h-5 w-5" /> Playground
             </button>
             <button
               type="button"
@@ -345,9 +408,15 @@ export default function APIDetailPage() {
         )}
 
         <div className="rounded-2xl border border-[rgba(11,18,32,0.08)] bg-surface p-6 shadow-soft sm:p-8">
-          <h2 className="mb-4 font-display text-2xl font-semibold text-ink">
-            Reviews
-          </h2>
+          <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="font-display text-2xl font-semibold text-ink">
+              Reviews
+            </h2>
+            <p className="text-sm text-ink-faint">
+              {api.subscriberCount || 0} subscribers · {api.usageCalls || 0} gateway
+              calls
+            </p>
+          </div>
           <ReviewForm apiId={api.id} onSubmitted={fetchAPI} />
           {api.reviews?.length > 0 ? (
             <div className="space-y-4">
@@ -393,7 +462,10 @@ export default function APIDetailPage() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-ink-muted">No reviews yet.</p>
+            <p className="text-sm text-ink-muted">
+              No reviews yet. Subscribe and try the gateway, then leave the first
+              review.
+            </p>
           )}
         </div>
       </div>

@@ -7,8 +7,18 @@ interface CompareApi {
   category: string;
   description?: string;
   rating?: number;
+  avgRating?: number;
   reviewCount?: number;
   isFeatured?: boolean;
+  arenaScore?: number;
+  tryReady?: boolean;
+  endpointCount?: number;
+  authType?: string | null;
+  https?: boolean | null;
+  hasOpenApi?: boolean;
+  subscriberCount?: number;
+  subscriptionCount?: number;
+  usageCalls?: number;
 }
 
 export function ApiComparison({ apis }: { apis: CompareApi[] }) {
@@ -20,16 +30,45 @@ export function ApiComparison({ apis }: { apis: CompareApi[] }) {
     { label: "Name", get: (a) => a.name },
     { label: "Category", get: (a) => a.category },
     {
+      label: "Arena Score",
+      get: (a) => String(a.arenaScore ?? 0),
+    },
+    {
+      label: "Try-ready",
+      get: (a) => (a.tryReady ? "Yes" : "No"),
+    },
+    {
+      label: "Endpoints",
+      get: (a) => String(a.endpointCount ?? 0),
+    },
+    {
+      label: "Auth",
+      get: (a) => a.authType || "unknown",
+    },
+    {
+      label: "HTTPS",
+      get: (a) => (a.https === false ? "No" : "Yes"),
+    },
+    {
+      label: "OpenAPI",
+      get: (a) => (a.hasOpenApi ? "Yes" : "No"),
+    },
+    {
       label: "Rating",
-      get: (a) => `${(a.rating ?? 0).toFixed(1)} (${a.reviewCount ?? 0})`,
+      get: (a) =>
+        `${(a.rating ?? a.avgRating ?? 0).toFixed(1)} (${a.reviewCount ?? 0})`,
+    },
+    {
+      label: "Subscribers",
+      get: (a) => String(a.subscriberCount ?? a.subscriptionCount ?? 0),
+    },
+    {
+      label: "Gateway calls",
+      get: (a) => String(a.usageCalls ?? 0),
     },
     {
       label: "Featured",
       get: (a) => (a.isFeatured ? "Yes" : "No"),
-    },
-    {
-      label: "Plans",
-      get: () => "Free / Pro",
     },
   ];
 
