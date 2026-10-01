@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { importPublicAPIs } from "@/lib/services/public-apis";
+import { importPublicAPIs } from "@/lib/services/catalog-import";
 
 /**
  * Cron job endpoint to sync public APIs

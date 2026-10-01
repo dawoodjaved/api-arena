@@ -72,6 +72,20 @@ model API {
   category      String
   logo          String?
   baseUrl       String?       // Upstream URL for gateway proxy (fallback: OpenAPI servers[0])
+  // Catalog enrichment (Arena sync / publisher)
+  authType      String?       // none | apiKey | oauth | http | unknown
+  https         Boolean?      @default(true)
+  cors          String?       // yes | no | unknown
+  docsUrl       String?       // External docs / homepage
+  openapiUrl    String?       // Link to OpenAPI/Swagger if known
+  hasOpenApi    Boolean       @default(false)
+  source        String?       // internal: directory | openapi | merged | manual | seed
+  sourceKey     String?       // Stable sync key (unique when set; never shown in UI)
+  tags          String[]      @default([])
+  arenaScore    Int           @default(0) // 0–100 developer-readiness score
+  endpointCount Int           @default(0)
+  tryReady      Boolean       @default(false) // real OpenAPI paths + HTTPS
+  lastSyncedAt  DateTime?
   isPublic      Boolean       @default(true)
   isApproved    Boolean       @default(false)
   isFeatured    Boolean       @default(false)
@@ -84,6 +98,11 @@ model API {
   apiKeys       APIKey[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+
+  @@index([category])
+  @@index([arenaScore])
+  @@index([hasOpenApi])
+  @@index([sourceKey])
 }
 
 model APIVersion {

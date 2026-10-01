@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { importPublicAPIs } from "@/lib/services/public-apis";
+import { importPublicAPIs } from "@/lib/services/catalog-import";
 
 /**
- * Clear old sample APIs and import fresh ones from publicapis.org
+ * Clear system-owned sample APIs and import a fresh catalog batch.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`Deleted ${deleteResult.count} old APIs`);
 
-    // Import fresh APIs from publicapis.org
+    // Import fresh catalog APIs
     const importResult = await importPublicAPIs(systemUser.id, limit);
 
     return NextResponse.json({

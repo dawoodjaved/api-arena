@@ -1,25 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { importPublicAPIs } from "@/lib/services/public-apis";
+import { importPublicAPIs } from "@/lib/services/catalog-import";
 
-/**
- * Fetch and import real-world APIs from publicapis.org
- * This endpoint fetches from https://api.publicapis.org/entries and populates the marketplace
- */
+/** Admin: import APIs from the configured directory feed. */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
-    const limit = body.limit || 100; // Default to 100 APIs
+    const limit = body.limit || 100;
 
-    // Import real APIs from publicapis.org
-    // The importPublicAPIs function will create the system user if needed
     const result = await importPublicAPIs(undefined, limit);
 
     return NextResponse.json({
-      message: "Real-world APIs imported successfully from publicapis.org",
+      message: "APIs imported successfully",
       ...result,
     });
   } catch (error) {
-    console.error("Error importing APIs from publicapis.org:", error);
+    console.error("Error importing APIs:", error);
     return NextResponse.json(
       {
         error: "Failed to import APIs",
