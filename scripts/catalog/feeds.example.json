@@ -1,0 +1,9 @@
+{
+  "directory_entries": [
+    "https://example.com/path/to/entries.json"
+  ],
+  "directory_readme": "",
+  "openapi_index": "https://example.com/path/to/openapi-index.json",
+  "directory_key_ns": "directory",
+  "openapi_key_ns": "openapi"
+}

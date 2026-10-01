@@ -24,15 +24,16 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
+# local env files / secrets
 .env*.local
 .env
 .env*.bak
 *.bak
 *.backup
 
-# vercel
+# vercel / neon local
 .vercel
+.neon
 
 # typescript
 *.tsbuildinfo
@@ -40,5 +41,27 @@ next-env.d.ts
 
 # prisma
 /prisma/migrations
-
 /generated/prisma
+
+# ── local-only (not for GitHub) ─────────────────────────────────────────────
+
+# docs — public repo keeps README only
+*.md
+!README.md
+
+# catalog data & sync artifacts (keep private / local)
+data/catalog/*.csv
+data/catalog/seed_catalog.json
+data/catalog/SYNC_REPORT.md
+data/catalog/specs/**
+!data/catalog/specs/.gitkeep
+!data/catalog/.gitkeep
+
+# private feed URLs for catalog sync (copy from feeds.example.json)
+scripts/catalog/feeds.local.json
+scripts/catalog/.venv/
+scripts/catalog/**/__pycache__/
+**/__pycache__/
+*.py[cod]
+.venv/
+venv/

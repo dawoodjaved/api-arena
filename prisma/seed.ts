@@ -1,4 +1,6 @@
 import "dotenv/config";
+import { readFileSync, existsSync } from "fs";
+import { join } from "path";
 import { PrismaClient } from "../generated/prisma/client";
 import bcrypt from "bcryptjs";
 
@@ -12,7 +14,30 @@ function avatar(seed: string) {
   return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}`;
 }
 
-type SeedApi = {
+type CatalogRow = {
+  sourceKey: string;
+  slug: string;
+  name: string;
+  description: string;
+  category: string;
+  authType?: string;
+  https?: boolean;
+  cors?: string;
+  docsUrl?: string;
+  baseUrl?: string | null;
+  openapiUrl?: string | null;
+  hasOpenApi?: boolean;
+  openapiHydrated?: boolean;
+  endpointCount?: number;
+  tryReady?: boolean;
+  logo?: string | null;
+  source?: string;
+  tags?: string[];
+  arenaScore?: number;
+  featured?: boolean;
+};
+
+type DemoApi = {
   name: string;
   slug: string;
   description: string;
@@ -23,7 +48,8 @@ type SeedApi = {
   reviews?: Array<{ email: string; rating: number; comment: string }>;
 };
 
-const catalog: SeedApi[] = [
+/** Hand-curated playground demos (always seeded, great for Try It). */
+const demoCatalog: DemoApi[] = [
   {
     name: "Horizon Weather",
     slug: "horizon-weather",
@@ -52,11 +78,6 @@ const catalog: SeedApi[] = [
         rating: 5,
         comment: "Clean docs and reliable responses for weather widgets.",
       },
-      {
-        email: "maya@apiarena.local",
-        rating: 4,
-        comment: "Great coverage. Latency is solid for dashboards.",
-      },
     ],
   },
   {
@@ -81,13 +102,6 @@ const catalog: SeedApi[] = [
         },
       },
     },
-    reviews: [
-      {
-        email: "jordan@apiarena.local",
-        rating: 5,
-        comment: "Straightforward payment flow for our SaaS billing.",
-      },
-    ],
   },
   {
     name: "Pulse AI Insights",
@@ -104,160 +118,23 @@ const catalog: SeedApi[] = [
           responses: { "200": { description: "OK" } },
         },
       },
-      "/get": {
-        get: {
-          summary: "Model health",
-          responses: { "200": { description: "OK" } },
-        },
-      },
     },
-    reviews: [
-      {
-        email: "maya@apiarena.local",
-        rating: 5,
-        comment: "Embeddings quality is excellent for search.",
-      },
-      {
-        email: "dev@apiarena.local",
-        rating: 4,
-        comment: "Docs are clear. Would love more language samples.",
-      },
-    ],
-  },
-  {
-    name: "Signal Social Graph",
-    slug: "signal-social",
-    description:
-      "Profiles, follows, and activity feeds for social products and community apps.",
-    category: "Social",
-    baseUrl: "https://httpbin.org",
-    paths: {
-      "/get": {
-        get: {
-          summary: "Fetch profile",
-          responses: { "200": { description: "OK" } },
-        },
-      },
-      "/post": {
-        post: {
-          summary: "Create activity",
-          responses: { "200": { description: "OK" } },
-        },
-      },
-    },
-    reviews: [
-      {
-        email: "jordan@apiarena.local",
-        rating: 4,
-        comment: "Useful graph endpoints for our community MVP.",
-      },
-    ],
-  },
-  {
-    name: "Relay Notify",
-    slug: "relay-notify",
-    description:
-      "Transactional email, SMS, and push delivery with templates and delivery receipts.",
-    category: "Communication",
-    baseUrl: "https://httpbin.org",
-    featured: true,
-    paths: {
-      "/post": {
-        post: {
-          summary: "Send notification",
-          responses: { "200": { description: "OK" } },
-        },
-      },
-      "/get": {
-        get: {
-          summary: "Delivery status",
-          responses: { "200": { description: "OK" } },
-        },
-      },
-    },
-    reviews: [
-      {
-        email: "dev@apiarena.local",
-        rating: 5,
-        comment: "Templates + receipts made onboarding email easy.",
-      },
-    ],
-  },
-  {
-    name: "Atlas Geo",
-    slug: "atlas-geo",
-    description:
-      "Geocoding, reverse geocoding, and distance matrix for maps and logistics.",
-    category: "Data",
-    baseUrl: "https://httpbin.org",
-    paths: {
-      "/get": {
-        get: {
-          summary: "Geocode address",
-          responses: { "200": { description: "OK" } },
-        },
-      },
-    },
-    reviews: [
-      {
-        email: "maya@apiarena.local",
-        rating: 4,
-        comment: "Accurate enough for store locator use cases.",
-      },
-    ],
-  },
-  {
-    name: "Vault Storage",
-    slug: "vault-storage",
-    description:
-      "Signed upload URLs, object metadata, and lifecycle policies for file storage.",
-    category: "Storage",
-    baseUrl: "https://httpbin.org",
-    paths: {
-      "/post": {
-        post: {
-          summary: "Create upload URL",
-          responses: { "200": { description: "OK" } },
-        },
-      },
-      "/get": {
-        get: {
-          summary: "Object metadata",
-          responses: { "200": { description: "OK" } },
-        },
-      },
-    },
-  },
-  {
-    name: "Meter Analytics",
-    slug: "meter-analytics",
-    description:
-      "Event ingest, funnels, and retention queries for product analytics.",
-    category: "Analytics",
-    baseUrl: "https://httpbin.org",
-    paths: {
-      "/post": {
-        post: {
-          summary: "Ingest events",
-          responses: { "200": { description: "OK" } },
-        },
-      },
-      "/get": {
-        get: {
-          summary: "Query funnel",
-          responses: { "200": { description: "OK" } },
-        },
-      },
-    },
-    reviews: [
-      {
-        email: "jordan@apiarena.local",
-        rating: 5,
-        comment: "Event schema is flexible without being messy.",
-      },
-    ],
   },
 ];
+
+function loadCatalogJson(): CatalogRow[] {
+  const path = join(process.cwd(), "data/catalog/seed_catalog.json");
+  if (!existsSync(path)) {
+    console.warn(
+      "Missing data/catalog/seed_catalog.json — run: python3 scripts/catalog/sync_catalog.py"
+    );
+    return [];
+  }
+  const raw = readFileSync(path, "utf-8");
+  const data = JSON.parse(raw);
+  if (!Array.isArray(data)) return [];
+  return data as CatalogRow[];
+}
 
 async function upsertUser(opts: {
   email: string;
@@ -270,8 +147,8 @@ async function upsertUser(opts: {
   const user = await prisma.user.upsert({
     where: { email: opts.email },
     update: {
-      role: opts.role,
       name: opts.name,
+      role: opts.role,
       image: opts.image,
     },
     create: {
@@ -285,13 +162,7 @@ async function upsertUser(opts: {
   const existing = await prisma.account.findFirst({
     where: { userId: user.id, provider: "credentials" },
   });
-
-  if (existing) {
-    await prisma.account.update({
-      where: { id: existing.id },
-      data: { access_token: hashed },
-    });
-  } else {
+  if (!existing) {
     await prisma.account.create({
       data: {
         userId: user.id,
@@ -301,23 +172,47 @@ async function upsertUser(opts: {
         access_token: hashed,
       },
     });
+  } else {
+    await prisma.account.update({
+      where: { id: existing.id },
+      data: { access_token: hashed },
+    });
   }
 
   return user;
 }
 
-async function upsertApi(providerId: string, item: SeedApi) {
-  const openApiSpec = {
+function buildOpenApi(item: {
+  name: string;
+  description: string;
+  baseUrl?: string | null;
+  docsUrl?: string | null;
+  paths?: Record<string, any>;
+}) {
+  const server =
+    item.baseUrl ||
+    (item.docsUrl ? item.docsUrl.replace(/\/$/, "") : "https://example.com");
+  return {
     openapi: "3.0.0",
     info: {
       title: item.name,
       version: "1.0.0",
       description: item.description,
     },
-    servers: [{ url: item.baseUrl }],
-    paths: item.paths,
+    servers: [{ url: server }],
+    paths: item.paths || {
+      "/": {
+        get: {
+          summary: "API root / docs entry",
+          responses: { "200": { description: "OK" } },
+        },
+      },
+    },
   };
+}
 
+async function upsertDemoApi(providerId: string, item: DemoApi) {
+  const openApiSpec = buildOpenApi(item);
   const api = await prisma.aPI.upsert({
     where: { slug: item.slug },
     update: {
@@ -326,6 +221,18 @@ async function upsertApi(providerId: string, item: SeedApi) {
       category: item.category,
       logo: logo(item.slug),
       baseUrl: item.baseUrl,
+      docsUrl: item.baseUrl,
+      authType: "none",
+      https: true,
+      cors: "yes",
+      hasOpenApi: true,
+      source: "seed",
+      sourceKey: `seed:${item.slug}`,
+      tags: ["auth:none", "https", "openapi", "playground"],
+      arenaScore: 92,
+      endpointCount: Object.keys(item.paths || {}).length,
+      tryReady: true,
+      lastSyncedAt: new Date(),
       isPublic: true,
       isApproved: true,
       isFeatured: Boolean(item.featured),
@@ -338,6 +245,18 @@ async function upsertApi(providerId: string, item: SeedApi) {
       category: item.category,
       logo: logo(item.slug),
       baseUrl: item.baseUrl,
+      docsUrl: item.baseUrl,
+      authType: "none",
+      https: true,
+      cors: "yes",
+      hasOpenApi: true,
+      source: "seed",
+      sourceKey: `seed:${item.slug}`,
+      tags: ["auth:none", "https", "openapi", "playground"],
+      arenaScore: 92,
+      endpointCount: Object.keys(item.paths || {}).length,
+      tryReady: true,
+      lastSyncedAt: new Date(),
       isPublic: true,
       isApproved: true,
       isFeatured: Boolean(item.featured),
@@ -345,31 +264,256 @@ async function upsertApi(providerId: string, item: SeedApi) {
     },
   });
 
-  let version = await prisma.aPIVersion.findFirst({
+  await syncVersionAndEndpoints(api.id, openApiSpec, item.paths, `Demo seed: ${item.name}`);
+  return api;
+}
+
+async function upsertCatalogApi(providerId: string, item: CatalogRow) {
+  let slug = item.slug;
+  const conflict = await prisma.aPI.findUnique({ where: { slug } });
+  if (conflict && conflict.sourceKey !== item.sourceKey) {
+    slug = `${item.slug}-${item.sourceKey.slice(0, 6)}`;
+  }
+
+  // Prefer hydrated OpenAPI file from catalog sync
+  const specPath = join(
+    process.cwd(),
+    "data/catalog/specs",
+    `${item.sourceKey}.json`
+  );
+  let openApiSpec: any = null;
+  let paths: Record<string, any> | undefined;
+  if (existsSync(specPath)) {
+    try {
+      openApiSpec = JSON.parse(readFileSync(specPath, "utf-8"));
+      paths = openApiSpec?.paths;
+    } catch {
+      openApiSpec = null;
+    }
+  }
+  if (!openApiSpec) {
+    openApiSpec = buildOpenApi({
+      name: item.name,
+      description: item.description,
+      baseUrl: item.baseUrl,
+      docsUrl: item.docsUrl,
+    });
+  }
+
+  const endpointCount =
+    item.endpointCount && item.endpointCount > 0
+      ? item.endpointCount
+      : paths
+        ? Object.values(paths).reduce((n: number, ops: any) => {
+            if (!ops || typeof ops !== "object") return n;
+            return (
+              n +
+              Object.keys(ops).filter((m) =>
+                ["get", "post", "put", "patch", "delete", "head", "options"].includes(
+                  m
+                )
+              ).length
+            );
+          }, 0)
+        : 1;
+
+  const tryReady =
+    item.tryReady === true ||
+    (endpointCount >= 2 && item.https !== false && Boolean(paths));
+
+  const data = {
+    name: item.name.slice(0, 200),
+    description: item.description.slice(0, 4000),
+    category: item.category || "Other",
+    logo: item.logo || logo(slug),
+    baseUrl: item.baseUrl || null,
+    authType: item.authType || "unknown",
+    https: item.https !== false,
+    cors: item.cors || "unknown",
+    docsUrl: item.docsUrl || null,
+    openapiUrl: item.openapiUrl || null,
+    hasOpenApi: Boolean(item.hasOpenApi) || Boolean(paths),
+    source: item.source || "directory",
+    sourceKey: item.sourceKey,
+    tags: item.tags || [],
+    arenaScore: Math.max(0, Math.min(100, item.arenaScore || 0)),
+    endpointCount,
+    tryReady,
+    lastSyncedAt: new Date(),
+    isPublic: true,
+    isApproved: true,
+    isFeatured: Boolean(item.featured),
+    userId: providerId,
+  };
+
+  const bySource = item.sourceKey
+    ? await prisma.aPI.findFirst({ where: { sourceKey: item.sourceKey } })
+    : null;
+
+  let api;
+  if (bySource) {
+    api = await prisma.aPI.update({
+      where: { id: bySource.id },
+      data: { ...data, slug: bySource.slug },
+    });
+  } else {
+    api = await prisma.aPI.upsert({
+      where: { slug },
+      update: data,
+      create: { ...data, slug },
+    });
+  }
+
+  const existingVersion = await prisma.aPIVersion.findFirst({
     where: { apiId: api.id, version: "1.0.0" },
+  });
+  const changelog = [
+    item.openapiUrl ? `OpenAPI available` : null,
+    `Auth: ${item.authType || "unknown"}`,
+    `Arena Score: ${item.arenaScore ?? 0}`,
+    `Endpoints: ${endpointCount}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  if (!existingVersion) {
+    const version = await prisma.aPIVersion.create({
+      data: {
+        apiId: api.id,
+        version: "1.0.0",
+        openApiSpec,
+        changelog,
+      },
+    });
+    if (paths && Object.keys(paths).length) {
+      const endpoints: Array<{
+        method: string;
+        path: string;
+        description?: string;
+      }> = [];
+      for (const [path, methods] of Object.entries(paths)) {
+        for (const [method, op] of Object.entries(methods as Record<string, any>)) {
+          if (
+            !["get", "post", "put", "patch", "delete", "head", "options"].includes(
+              method
+            )
+          ) {
+            continue;
+          }
+          endpoints.push({
+            method: method.toUpperCase(),
+            path,
+            description: op?.summary,
+          });
+          if (endpoints.length >= 120) break;
+        }
+        if (endpoints.length >= 120) break;
+      }
+      if (endpoints.length) {
+        await prisma.endpoint.createMany({
+          data: endpoints.map((e) => ({
+            versionId: version.id,
+            method: e.method,
+            path: e.path,
+            description: e.description,
+          })),
+        });
+      }
+    } else {
+      await prisma.endpoint.create({
+        data: {
+          versionId: version.id,
+          method: "GET",
+          path: "/",
+          description: `Access ${item.name}`,
+        },
+      });
+    }
+  } else if (paths && Object.keys(paths).length && tryReady) {
+    // Refresh hydrated specs on re-seed
+    await prisma.aPIVersion.update({
+      where: { id: existingVersion.id },
+      data: { openApiSpec, changelog },
+    });
+    await prisma.endpoint.deleteMany({ where: { versionId: existingVersion.id } });
+    const endpoints: Array<{
+      method: string;
+      path: string;
+      description?: string;
+    }> = [];
+    for (const [path, methods] of Object.entries(paths)) {
+      for (const [method, op] of Object.entries(methods as Record<string, any>)) {
+        if (
+          !["get", "post", "put", "patch", "delete", "head", "options"].includes(
+            method
+          )
+        ) {
+          continue;
+        }
+        endpoints.push({
+          method: method.toUpperCase(),
+          path,
+          description: op?.summary,
+        });
+        if (endpoints.length >= 120) break;
+      }
+      if (endpoints.length >= 120) break;
+    }
+    if (endpoints.length) {
+      await prisma.endpoint.createMany({
+        data: endpoints.map((e) => ({
+          versionId: existingVersion.id,
+          method: e.method,
+          path: e.path,
+          description: e.description,
+        })),
+      });
+    }
+  } else {
+    await prisma.aPIVersion.update({
+      where: { id: existingVersion.id },
+      data: { openApiSpec, changelog },
+    });
+  }
+
+  return api;
+}
+
+async function syncVersionAndEndpoints(
+  apiId: string,
+  openApiSpec: any,
+  paths?: Record<string, any>,
+  changelog?: string
+) {
+  let version = await prisma.aPIVersion.findFirst({
+    where: { apiId, version: "1.0.0" },
   });
 
   if (!version) {
     version = await prisma.aPIVersion.create({
       data: {
-        apiId: api.id,
+        apiId,
         version: "1.0.0",
         openApiSpec,
-        changelog: `Initial release of ${item.name}.`,
+        changelog: changelog || "Initial catalog sync",
       },
     });
   } else {
     version = await prisma.aPIVersion.update({
       where: { id: version.id },
-      data: { openApiSpec, changelog: `Initial release of ${item.name}.` },
+      data: { openApiSpec, changelog: changelog || version.changelog },
     });
     await prisma.endpoint.deleteMany({ where: { versionId: version.id } });
   }
 
+  const pathMap = paths || openApiSpec.paths || {};
   const endpoints: Array<{ method: string; path: string; description?: string }> =
     [];
-  for (const [path, methods] of Object.entries(item.paths)) {
+  for (const [path, methods] of Object.entries(pathMap)) {
     for (const [method, op] of Object.entries(methods as Record<string, any>)) {
+      if (!["get", "post", "put", "patch", "delete", "head", "options"].includes(method)) {
+        continue;
+      }
       endpoints.push({
         method: method.toUpperCase(),
         path,
@@ -388,8 +532,6 @@ async function upsertApi(providerId: string, item: SeedApi) {
       })),
     });
   }
-
-  return api;
 }
 
 async function main() {
@@ -407,6 +549,14 @@ async function main() {
     role: "provider",
     password: "provider123",
     image: avatar("nova-labs"),
+  });
+
+  const catalogProvider = await upsertUser({
+    email: "catalog@apiarena.local",
+    name: "APIArena Catalog",
+    role: "provider",
+    password: "catalog123",
+    image: avatar("apiarena-catalog"),
   });
 
   const reviewers = await Promise.all([
@@ -433,27 +583,18 @@ async function main() {
     }),
   ]);
 
-  const reviewerByEmail = Object.fromEntries(
-    reviewers.map((u) => [u.email, u])
-  );
+  const reviewerByEmail = Object.fromEntries(reviewers.map((u) => [u.email, u]));
 
-  // Keep old demo slug working by aliasing to horizon-weather content
   await prisma.aPI.deleteMany({ where: { slug: "demo-weather" } }).catch(() => {});
 
-  for (const item of catalog) {
-    const api = await upsertApi(provider.id, item);
-
+  for (const item of demoCatalog) {
+    const api = await upsertDemoApi(provider.id, item);
     for (const review of item.reviews || []) {
       const user = reviewerByEmail[review.email];
       if (!user) continue;
       await prisma.review.upsert({
-        where: {
-          userId_apiId: { userId: user.id, apiId: api.id },
-        },
-        update: {
-          rating: review.rating,
-          comment: review.comment,
-        },
+        where: { userId_apiId: { userId: user.id, apiId: api.id } },
+        update: { rating: review.rating, comment: review.comment },
         create: {
           userId: user.id,
           apiId: api.id,
@@ -462,28 +603,31 @@ async function main() {
         },
       });
     }
+  }
 
-    // Free-tier style subscription for first reviewer (keys / usage demos)
-    const subscriber = reviewers[0];
-    await prisma.subscription.upsert({
-      where: {
-        userId_apiId: { userId: subscriber.id, apiId: api.id },
-      },
-      update: {
-        plan: "free",
-        status: "active",
-        stripeCustomerId: `cus_seed_${subscriber.id.slice(0, 8)}`,
-        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      },
-      create: {
-        userId: subscriber.id,
-        apiId: api.id,
-        plan: "free",
-        status: "active",
-        stripeCustomerId: `cus_seed_${subscriber.id.slice(0, 8)}`,
-        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      },
-    });
+  const catalog = loadCatalogJson();
+  console.log(`Seeding ${catalog.length} catalog APIs from seed_catalog.json…`);
+
+  let seeded = 0;
+  let errors = 0;
+  const batchSize = 50;
+  for (let i = 0; i < catalog.length; i += batchSize) {
+    const batch = catalog.slice(i, i + batchSize);
+    for (const item of batch) {
+      try {
+        if (!item.slug || !item.name || !item.sourceKey) continue;
+        await upsertCatalogApi(catalogProvider.id, item);
+        seeded++;
+      } catch (e) {
+        errors++;
+        if (errors < 8) {
+          console.warn(`Skip ${item.slug}:`, e instanceof Error ? e.message : e);
+        }
+      }
+    }
+    if ((i / batchSize) % 10 === 0) {
+      console.log(`  … ${Math.min(i + batchSize, catalog.length)} / ${catalog.length}`);
+    }
   }
 
   const counts = {
@@ -492,16 +636,18 @@ async function main() {
     reviews: await prisma.review.count(),
     versions: await prisma.aPIVersion.count(),
     endpoints: await prisma.endpoint.count(),
+    catalogSeeded: seeded,
+    catalogErrors: errors,
   };
 
-  console.log("Seed complete with polished catalog.");
+  console.log("Seed complete.");
   console.log(counts);
   console.log("Logins:");
   console.log("  admin@apiarena.local / admin123");
   console.log("  provider@apiarena.local / provider123");
+  console.log("  catalog@apiarena.local / catalog123");
   console.log("  dev@apiarena.local / user1234");
   console.log("Admin id:", admin.id);
-  console.log("Provider:", provider.name);
 }
 
 main()

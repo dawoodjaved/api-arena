@@ -2,26 +2,33 @@ import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 
 /**
- * Test endpoint to check if publicapis.org API is accessible
+ * Test whether the configured directory feed URL is reachable.
  */
-export async function GET(request: NextRequest) {
-  try {
-    console.log("Testing publicapis.org API...");
-    
-    const response = await axios.get("https://api.publicapis.org/entries", {
-      timeout: 30000,
-      headers: {
-        'Accept': 'application/json',
+export async function GET(_request: NextRequest) {
+  const feedUrl = process.env.CATALOG_DIRECTORY_FEED_URL?.trim();
+  if (!feedUrl) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Set CATALOG_DIRECTORY_FEED_URL to test the directory feed.",
       },
+      { status: 400 }
+    );
+  }
+
+  try {
+    console.log("Testing catalog directory feed…");
+
+    const response = await axios.get(feedUrl, {
+      timeout: 30000,
+      headers: { Accept: "application/json" },
     });
 
     const data = response.data;
-    
-    // Check response format
     let entries: any[] = [];
     let count = 0;
 
-    if (data && typeof data === 'object') {
+    if (data && typeof data === "object") {
       if (Array.isArray(data.entries)) {
         entries = data.entries;
         count = data.count || entries.length;
@@ -31,7 +38,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Get sample entries
     const sample = entries.slice(0, 5).map((entry: any) => ({
       API: entry.API,
       Description: entry.Description?.substring(0, 100),
@@ -44,23 +50,21 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "API is accessible",
+      message: "Feed is accessible",
       totalCount: count,
       sampleEntries: sample,
       responseFormat: {
         hasEntries: Array.isArray(data.entries),
         isDirectArray: Array.isArray(data),
-        hasCount: typeof data.count === 'number',
+        hasCount: typeof data.count === "number",
       },
     });
   } catch (error: any) {
-    console.error("Error testing publicapis.org API:", error);
+    console.error("Error testing catalog feed:", error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message,
-        details: error.response?.data || "No response data",
-        status: error.response?.status,
+        message: error.message || "Feed unreachable",
       },
       { status: 500 }
     );
