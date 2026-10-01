@@ -12,8 +12,7 @@ interface PublicAPIEntry {
 }
 
 /**
- * Import APIs from provided data (useful when server can't reach api.publicapis.org)
- * This endpoint accepts the API data directly in the request body
+ * Import APIs from request body (when the server cannot reach remote feeds).
  */
 export async function POST(request: NextRequest) {
   try {
@@ -175,7 +174,7 @@ export async function POST(request: NextRequest) {
                 },
               },
             },
-            changelog: `Imported from public-apis.org\nAuth: ${api.Auth || "None"}\nHTTPS: ${api.HTTPS}\nCORS: ${api.Cors || "Unknown"}`,
+            changelog: `Catalog import\nAuth: ${api.Auth || "None"}\nHTTPS: ${api.HTTPS}\nCORS: ${api.Cors || "Unknown"}`,
           },
         });
 
