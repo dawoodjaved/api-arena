@@ -8,6 +8,13 @@ export const metadata: Metadata = {
   title: "APIDoorway — Discover & ship APIs faster",
   description:
     "Publish OpenAPI specs, discover APIs, create keys, and monitor usage in one place.",
+  icons: {
+    icon: [
+      { url: "/favicon.png", type: "image/png" },
+      { url: "/logo.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: [{ url: "/apple-icon.png", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({

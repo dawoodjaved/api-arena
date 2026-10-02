@@ -24,8 +24,9 @@ export default async function Home() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(13,115,119,0.12),_transparent_55%)]" />
         <div className="relative mx-auto grid min-h-[calc(100vh-4.25rem)] max-w-container items-end gap-10 px-5 pb-16 pt-14 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:pb-20 lg:pt-10">
           <div className="animate-fade-up">
-            <p className="font-display text-5xl font-bold tracking-tight text-ink sm:text-6xl lg:text-7xl">
-              APIDoorway
+            <p className="font-display text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
+              <span className="text-primary">API</span>
+              <span className="text-ink">Doorway</span>
             </p>
             <h1 className="mt-5 max-w-xl font-display text-3xl font-semibold leading-tight tracking-tight text-ink-soft sm:text-4xl">
               Publish, discover, and ship APIs without the platform sprawl.
