@@ -44,10 +44,10 @@ function hasScope(scopes, method) {
 }
 
 // --- tests ---
-const key = "epl_abcdefghijklmnopqrstuvwxyz012345";
+const key = "adw_abcdefghijklmnopqrstuvwxyz012345";
 const hashed = hashApiKey(key);
 assert.strictEqual(hashed.length, 64);
-assert.strictEqual(apiKeyPrefix(key), "epl_abcdefgh");
+assert.strictEqual(apiKeyPrefix(key), "adw_abcdefgh");
 assert.notStrictEqual(hashed, key);
 
 assert.ok(

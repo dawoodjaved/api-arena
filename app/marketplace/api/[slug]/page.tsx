@@ -323,7 +323,7 @@ export default function APIDetailPage() {
                   type="password"
                   value={userKey}
                   onChange={(e) => setUserKey(e.target.value)}
-                  placeholder="epl_…"
+                  placeholder="adw_…"
                   className="w-full max-w-md rounded-lg border border-[rgba(11,18,32,0.08)] bg-canvas px-4 py-2 text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
                 />
                 <Link

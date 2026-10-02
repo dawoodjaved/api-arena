@@ -84,7 +84,7 @@ export default function SignUpPage() {
             Create your account
           </h2>
           <p className="mt-2 text-center text-sm text-ink-muted">
-            Join Endpointly and start building with APIs
+            Join APIDoorway and start building with APIs
           </p>
         </div>
 

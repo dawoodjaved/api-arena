@@ -91,7 +91,7 @@ export default function DashboardPage() {
         title: "Browse the marketplace",
         done: true,
         href: "/marketplace",
-        hint: "Find try-ready APIs by Endpointly Score",
+        hint: "Find try-ready APIs by APIDoorway Score",
       },
       {
         id: "key",
@@ -307,7 +307,7 @@ export default function DashboardPage() {
                   <p className="text-sm font-medium uppercase tracking-wide">Try next</p>
                 </div>
                 <h2 className="mt-2 font-display text-xl font-semibold text-ink">
-                  High Endpointly Score picks
+                  High APIDoorway Score picks
                 </h2>
                 <p className="mt-1 text-sm text-ink-muted">
                   Prefer try-ready APIs with real OpenAPI paths.

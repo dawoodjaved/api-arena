@@ -16,7 +16,7 @@ const fetchAPIData = async (url: string, options: any = {}) => {
         ...options,
         headers: {
           Accept: "application/json",
-          "User-Agent": "Endpointly/1.0",
+          "User-Agent": "APIDoorway/1.0",
           ...options.headers,
         },
       });
@@ -30,7 +30,7 @@ const fetchAPIData = async (url: string, options: any = {}) => {
     timeout: options.timeout || 60000,
     headers: {
       Accept: "application/json",
-      "User-Agent": "Endpointly/1.0",
+      "User-Agent": "APIDoorway/1.0",
       ...options.headers,
     },
   });
@@ -190,13 +190,13 @@ function mapCategory(category: string): string {
 async function getOrCreateSystemUser(userId?: string): Promise<string> {
   if (userId) return userId;
   const systemUser = await prisma.user.findFirst({
-    where: { email: "system@endpointly.com" },
+    where: { email: "system@apidoorway.com" },
   });
   if (systemUser) return systemUser.id;
   const newUser = await prisma.user.create({
     data: {
       name: "System",
-      email: "system@endpointly.com",
+      email: "system@apidoorway.com",
       role: "provider",
     },
   });

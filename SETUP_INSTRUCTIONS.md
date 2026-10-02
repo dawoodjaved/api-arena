@@ -1,4 +1,4 @@
-# Endpointly Setup Instructions
+# APIDoorway Setup Instructions
 
 ## Authentication Setup
 
@@ -53,7 +53,7 @@ Make sure your database is running and configured:
 
 ```bash
 # Set DATABASE_URL in .env
-DATABASE_URL="postgresql://user:password@localhost:5432/endpointly"
+DATABASE_URL="postgresql://user:password@localhost:5432/apidoorway"
 
 # Run migrations
 npx prisma migrate dev

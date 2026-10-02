@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Free deploy helper for Endpointly (Vercel + Neon + Upstash)
+# Free deploy helper for APIDoorway (Vercel + Neon + Upstash)
 # Prerequisites: logged-in neonctl, vercel CLI, and Upstash API creds (or skip Redis).
 set -euo pipefail
 
@@ -16,7 +16,7 @@ command -v vercel >/dev/null || { echo "Install vercel CLI: npm i -g vercel"; ex
 npx neonctl --version >/dev/null || { echo "neonctl unavailable"; exit 1; }
 
 SECRET="${NEXTAUTH_SECRET:-$(openssl rand -base64 32)}"
-PROJECT_NAME="${PROJECT_NAME:-endpointly}"
+PROJECT_NAME="${PROJECT_NAME:-apidoorway}"
 
 echo "==> Creating Neon project (if needed)"
 # List or create
@@ -83,4 +83,4 @@ fi
 echo "==> Done"
 echo "Open: $URL"
 echo "Health: $URL/api/health"
-echo "Seed logins: admin@endpointly.local / admin123  and  dev@endpointly.local / user1234"
+echo "Seed logins: admin@apidoorway.local / admin123  and  dev@apidoorway.local / user1234"

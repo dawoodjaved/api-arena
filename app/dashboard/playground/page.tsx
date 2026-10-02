@@ -78,7 +78,7 @@ export default function PlaygroundPage() {
             <label className="block text-sm text-gray-400 mb-1">API key</label>
             <input
               type="password"
-              placeholder="Paste your epl_… key"
+              placeholder="Paste your adw_… key"
               className="w-full px-4 py-3 rounded-lg bg-[#151B2B] border border-[rgba(255,255,255,0.05)] text-white"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}

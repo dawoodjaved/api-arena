@@ -5,7 +5,7 @@ import { Navbar } from "@/components/navbar";
 import { SiteFooter } from "@/components/site-footer";
 
 export const metadata: Metadata = {
-  title: "Endpointly — Discover & ship APIs faster",
+  title: "APIDoorway — Discover & ship APIs faster",
   description:
     "Publish OpenAPI specs, discover APIs, create keys, and monitor usage in one place.",
 };

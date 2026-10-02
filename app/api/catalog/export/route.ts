@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       generatedAt: new Date().toISOString(),
       count: apis.length,
-      note: "Endpointly Score ranks developer readiness (HTTPS, auth, CORS, OpenAPI).",
+      note: "APIDoorway Score ranks developer readiness (HTTPS, auth, CORS, OpenAPI).",
       apis: apis.map((a) => ({
         ...a,
         tags: (a.tags || []).filter((t) => !t.startsWith("src:")),

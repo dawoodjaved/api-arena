@@ -66,7 +66,7 @@ export async function fetchOpenApiSpec(url: string): Promise<any | null> {
     const res = await fetch(url, {
       headers: {
         Accept: "application/json, application/yaml, text/yaml, */*",
-        "User-Agent": "Endpointly/1.0",
+        "User-Agent": "APIDoorway/1.0",
       },
       signal: AbortSignal.timeout(25000),
     });

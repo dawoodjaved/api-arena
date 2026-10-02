@@ -1,4 +1,4 @@
-# Endpointly Improvements
+# APIDoorway Improvements
 
 ## MVP focus (current)
 

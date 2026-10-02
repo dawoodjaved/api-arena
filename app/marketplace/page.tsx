@@ -106,7 +106,7 @@ export default function MarketplacePage() {
               Marketplace
             </h1>
             <p className="mt-3 max-w-xl text-ink-muted">
-              Discover APIs ranked by Endpointly Score — subscribe, create a key, and
+              Discover APIs ranked by APIDoorway Score — subscribe, create a key, and
               try them through the gateway.
             </p>
           </div>
@@ -138,7 +138,7 @@ export default function MarketplacePage() {
               <p className="font-display text-2xl font-bold text-ink">{stats.tryReadyPct}%</p>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-wide text-ink-faint">Avg Endpointly Score</p>
+              <p className="text-xs uppercase tracking-wide text-ink-faint">Avg APIDoorway Score</p>
               <p className="font-display text-2xl font-bold text-ink">{stats.avgArenaScore}</p>
               {lastSync && (
                 <p className="mt-1 text-xs text-ink-faint">Synced {lastSync}</p>
@@ -226,7 +226,7 @@ export default function MarketplacePage() {
             onChange={(e) => setMinScore(Number(e.target.value))}
             className="rounded-[8px] border border-[rgba(11,18,32,0.08)] bg-surface px-3 py-1.5 text-ink-muted outline-none"
           >
-            <option value={0}>Any Endpointly Score</option>
+            <option value={0}>Any APIDoorway Score</option>
             <option value={50}>Score ≥ 50</option>
             <option value={70}>Score ≥ 70</option>
             <option value={85}>Score ≥ 85</option>
@@ -237,7 +237,7 @@ export default function MarketplacePage() {
           <section className="mt-12">
             <h2 className="font-display text-xl font-semibold text-ink">Featured</h2>
             <p className="mt-1 text-sm text-ink-muted">
-              High Endpointly Score picks with strong developer readiness.
+              High APIDoorway Score picks with strong developer readiness.
             </p>
             <div className="mt-2 divide-y divide-[rgba(11,18,32,0.08)] rounded-2xl border border-[rgba(11,18,32,0.08)] bg-surface px-2">
               {featured.map((api) => (

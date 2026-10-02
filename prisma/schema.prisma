@@ -73,7 +73,7 @@ model API {
   category      String
   logo          String?
   baseUrl       String?       // Upstream URL for gateway proxy (fallback: OpenAPI servers[0])
-  // Catalog enrichment (Endpointly sync / publisher)
+  // Catalog enrichment (APIDoorway sync / publisher)
   authType      String?       // none | apiKey | oauth | http | unknown
   https         Boolean?      @default(true)
   cors          String?       // yes | no | unknown
@@ -134,7 +134,7 @@ model Endpoint {
 model APIKey {
   id          String       @id @default(cuid())
   key         String       @unique // hashed key (sha256); plaintext shown once on create
-  keyPrefix   String?      // e.g. epl_xxxx for display/lookup hint
+  keyPrefix   String?      // e.g. adw_xxxx for display/lookup hint
   name        String
   userId      String
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)

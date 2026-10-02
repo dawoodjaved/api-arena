@@ -2,8 +2,8 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 export const metadata = {
-  title: "Privacy Policy | Endpointly",
-  description: "Privacy Policy for Endpointly API Marketplace & Management Platform",
+  title: "Privacy Policy | APIDoorway",
+  description: "Privacy Policy for APIDoorway API Marketplace & Management Platform",
 };
 
 export default function PrivacyPage() {
@@ -23,7 +23,7 @@ export default function PrivacyPage() {
 
         <div className="prose prose-invert prose-gray max-w-none space-y-6 text-gray-400 text-sm sm:text-base">
           <p>
-            Endpointly (“we,” “us,” or “our”) is committed to protecting your privacy. This Privacy Policy describes how we collect, use, and disclose information when you use our API marketplace and related services.
+            APIDoorway (“we,” “us,” or “our”) is committed to protecting your privacy. This Privacy Policy describes how we collect, use, and disclose information when you use our API marketplace and related services.
           </p>
 
           <h2 className="text-xl font-semibold text-white mt-8">Information We Collect</h2>
@@ -33,7 +33,7 @@ export default function PrivacyPage() {
 
           <h2 className="text-xl font-semibold text-white mt-8">How We Use Your Information</h2>
           <p>
-            We use your information to provide, secure, and improve Endpointly; to communicate with you about your account and the service; to enforce our Terms of Service; and to comply with legal obligations. We may use aggregated or anonymized data for analytics and product improvement.
+            We use your information to provide, secure, and improve APIDoorway; to communicate with you about your account and the service; to enforce our Terms of Service; and to comply with legal obligations. We may use aggregated or anonymized data for analytics and product improvement.
           </p>
 
           <h2 className="text-xl font-semibold text-white mt-8">Sharing and Disclosure</h2>
@@ -48,7 +48,7 @@ export default function PrivacyPage() {
 
           <h2 className="text-xl font-semibold text-white mt-8">Contact</h2>
           <p>
-            For privacy-related questions or requests, please contact us through the support or contact options provided in the Endpointly platform.
+            For privacy-related questions or requests, please contact us through the support or contact options provided in the APIDoorway platform.
           </p>
         </div>
 

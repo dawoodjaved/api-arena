@@ -29,14 +29,14 @@ export async function POST(request: NextRequest) {
 
     // Get or create system user
     let systemUser = await prisma.user.findFirst({
-      where: { email: "system@endpointly.com" },
+      where: { email: "system@apidoorway.com" },
     });
 
     if (!systemUser) {
       systemUser = await prisma.user.create({
         data: {
           name: "System",
-          email: "system@endpointly.com",
+          email: "system@apidoorway.com",
           role: "provider",
         },
       });

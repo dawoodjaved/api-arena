@@ -1,7 +1,7 @@
 {
-  "name": "endpointly",
+  "name": "apidoorway",
   "version": "1.0.0",
-  "description": "Endpointly — API Marketplace & Management Platform",
+  "description": "APIDoorway — API Marketplace & Management Platform",
   "main": "index.js",
   "scripts": {
     "dev": "next dev",

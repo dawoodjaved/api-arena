@@ -31,11 +31,11 @@ Download and install from https://www.postgresql.org/download/windows/
 psql postgres
 
 # Create database
-CREATE DATABASE endpointly;
+CREATE DATABASE apidoorway;
 
 # Create user (optional)
 CREATE USER api_user WITH PASSWORD 'your_password';
-GRANT ALL PRIVILEGES ON DATABASE endpointly TO api_user;
+GRANT ALL PRIVILEGES ON DATABASE apidoorway TO api_user;
 
 # Exit psql
 \q
@@ -47,7 +47,7 @@ Create a `.env` file in the root directory:
 
 ```bash
 # Database
-DATABASE_URL="postgresql://api_user:your_password@localhost:5432/endpointly?schema=public"
+DATABASE_URL="postgresql://api_user:your_password@localhost:5432/apidoorway?schema=public"
 
 # NextAuth
 NEXTAUTH_SECRET="your-secret-key-here-generate-with-openssl-rand-base64-32"
@@ -127,14 +127,14 @@ If you prefer Docker:
 
 ```bash
 # Run PostgreSQL in Docker
-docker run --name endpointly-db \
+docker run --name apidoorway-db \
   -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=endpointly \
+  -e POSTGRES_DB=apidoorway \
   -p 5432:5432 \
   -d postgres:14
 
 # Update DATABASE_URL
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/endpointly?schema=public"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/apidoorway?schema=public"
 ```
 
 ## 9. Reset Database (Development Only)

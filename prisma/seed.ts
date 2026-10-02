@@ -74,7 +74,7 @@ const demoCatalog: DemoApi[] = [
     },
     reviews: [
       {
-        email: "dev@endpointly.local",
+        email: "dev@apidoorway.local",
         rating: 5,
         comment: "Clean docs and reliable responses for weather widgets.",
       },
@@ -370,7 +370,7 @@ async function upsertCatalogApi(providerId: string, item: CatalogRow) {
   const changelog = [
     item.openapiUrl ? `OpenAPI available` : null,
     `Auth: ${item.authType || "unknown"}`,
-    `Endpointly Score: ${item.arenaScore ?? 0}`,
+    `APIDoorway Score: ${item.arenaScore ?? 0}`,
     `Endpoints: ${endpointCount}`,
   ]
     .filter(Boolean)
@@ -536,7 +536,7 @@ async function syncVersionAndEndpoints(
 
 async function main() {
   const admin = await upsertUser({
-    email: "admin@endpointly.local",
+    email: "admin@apidoorway.local",
     name: "Alex Rivera",
     role: "admin",
     password: "admin123",
@@ -544,7 +544,7 @@ async function main() {
   });
 
   const provider = await upsertUser({
-    email: "provider@endpointly.local",
+    email: "provider@apidoorway.local",
     name: "Nova Labs",
     role: "provider",
     password: "provider123",
@@ -552,30 +552,30 @@ async function main() {
   });
 
   const catalogProvider = await upsertUser({
-    email: "catalog@endpointly.local",
-    name: "Endpointly Catalog",
+    email: "catalog@apidoorway.local",
+    name: "APIDoorway Catalog",
     role: "provider",
     password: "catalog123",
-    image: avatar("endpointly-catalog"),
+    image: avatar("apidoorway-catalog"),
   });
 
   const reviewers = await Promise.all([
     upsertUser({
-      email: "dev@endpointly.local",
+      email: "dev@apidoorway.local",
       name: "Sam Chen",
       role: "user",
       password: "user1234",
       image: avatar("sam-chen"),
     }),
     upsertUser({
-      email: "maya@endpointly.local",
+      email: "maya@apidoorway.local",
       name: "Maya Okonkwo",
       role: "user",
       password: "user1234",
       image: avatar("maya-okonkwo"),
     }),
     upsertUser({
-      email: "jordan@endpointly.local",
+      email: "jordan@apidoorway.local",
       name: "Jordan Lee",
       role: "user",
       password: "user1234",
@@ -643,10 +643,10 @@ async function main() {
   console.log("Seed complete.");
   console.log(counts);
   console.log("Logins:");
-  console.log("  admin@endpointly.local / admin123");
-  console.log("  provider@endpointly.local / provider123");
-  console.log("  catalog@endpointly.local / catalog123");
-  console.log("  dev@endpointly.local / user1234");
+  console.log("  admin@apidoorway.local / admin123");
+  console.log("  provider@apidoorway.local / provider123");
+  console.log("  catalog@apidoorway.local / catalog123");
+  console.log("  dev@apidoorway.local / user1234");
   console.log("Admin id:", admin.id);
 }
 

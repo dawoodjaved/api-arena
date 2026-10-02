@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-echo "==> Endpointly local setup"
+echo "==> APIDoorway local setup"
 
 if [[ ! -f .env.local ]]; then
   echo "Missing .env.local — copy from .env.example and fill values"
@@ -34,8 +34,8 @@ echo "Open: http://localhost:3000"
 echo "Health: http://localhost:3000/api/health"
 echo ""
 echo "Seed logins:"
-echo "  admin@endpointly.local / admin123"
-echo "  provider@endpointly.local / provider123"
+echo "  admin@apidoorway.local / admin123"
+echo "  provider@apidoorway.local / provider123"
 echo ""
 echo "Optional from you:"
 echo "  - Stripe test keys in .env.local (billing)"
