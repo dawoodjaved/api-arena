@@ -211,7 +211,7 @@ export default function APIDetailPage() {
                     </span>
                   )}
                   <span className="rounded-full border border-[rgba(11,18,32,0.08)] px-3 py-1 text-sm text-ink-muted">
-                    Arena {api.arenaScore ?? 0}
+                    Score {api.arenaScore ?? 0}
                   </span>
                   {api.user?.name && (
                     <span className="text-sm text-ink-muted">by {api.user.name}</span>
@@ -323,7 +323,7 @@ export default function APIDetailPage() {
                   type="password"
                   value={userKey}
                   onChange={(e) => setUserKey(e.target.value)}
-                  placeholder="ara_…"
+                  placeholder="epl_…"
                   className="w-full max-w-md rounded-lg border border-[rgba(11,18,32,0.08)] bg-canvas px-4 py-2 text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
                 />
                 <Link

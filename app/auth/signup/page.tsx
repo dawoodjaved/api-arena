@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
 import { Mail, Lock, User, ArrowRight } from "lucide-react";
 
 export default function SignUpPage() {
@@ -21,6 +22,12 @@ export default function SignUpPage() {
     setError(null);
     setLoading(true);
 
+    if (formData.password.length < 8) {
+      setError("Password must be at least 8 characters");
+      setLoading(false);
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
       setLoading(false);
@@ -28,12 +35,13 @@ export default function SignUpPage() {
     }
 
     try {
+      const email = formData.email.trim().toLowerCase();
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: formData.name,
-          email: formData.email,
+          email,
           password: formData.password,
         }),
       });
@@ -41,12 +49,25 @@ export default function SignUpPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Failed to create account");
+        setError(data.message || data.error || "Failed to create account");
         setLoading(false);
         return;
       }
 
-      // Redirect to sign in
+      const result = await signIn("credentials", {
+        email,
+        password: formData.password,
+        remember: "true",
+        redirect: false,
+        callbackUrl: "/dashboard",
+      });
+
+      if (result?.ok) {
+        router.push("/dashboard");
+        router.refresh();
+        return;
+      }
+
       router.push("/auth/signin?registered=true");
     } catch (err) {
       console.error("Sign up error:", err);
@@ -56,31 +77,31 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0E1A] flex items-center justify-center py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-[rgba(21,27,43,0.5)] backdrop-blur-[20px] border border-[rgba(255,255,255,0.08)] rounded-2xl p-8 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+    <div className="page-shell flex min-h-[70vh] items-center justify-center px-5 py-12">
+      <div className="w-full max-w-md space-y-8 rounded-2xl border border-[rgba(11,18,32,0.08)] bg-surface p-8 shadow-soft">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
+          <h2 className="text-center font-display text-3xl font-bold text-ink">
             Create your account
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-400">
-            Join APIArena and start building with powerful APIs
+          <p className="mt-2 text-center text-sm text-ink-muted">
+            Join Endpointly and start building with APIs
           </p>
         </div>
 
         {error && (
-          <div className="bg-[#151B2B]/60 backdrop-blur-xl border border-red-500/30 rounded-2xl p-4">
-            <p className="text-sm text-red-400">{error}</p>
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+            <p className="text-sm text-red-700">{error}</p>
           </div>
         )}
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="name" className="mb-2 block text-sm font-medium text-ink-soft">
                 Full Name
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <User className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-faint" />
                 <input
                   id="name"
                   name="name"
@@ -88,18 +109,18 @@ export default function SignUpPage() {
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 border border-[rgba(255,255,255,0.05)] rounded-lg bg-[#151B2B] text-white placeholder-gray-500 focus:ring-2 focus:ring-[#4F7FFF] focus:border-transparent outline-none"
+                  className="w-full rounded-lg border border-[rgba(11,18,32,0.08)] bg-canvas py-3 pl-10 pr-4 text-ink outline-none placeholder:text-ink-faint focus:ring-2 focus:ring-accent"
                   placeholder="Your full name"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="email" className="mb-2 block text-sm font-medium text-ink-soft">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-faint" />
                 <input
                   id="email"
                   name="email"
@@ -108,79 +129,81 @@ export default function SignUpPage() {
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 border border-[rgba(255,255,255,0.05)] rounded-lg bg-[#151B2B] text-white placeholder-gray-500 focus:ring-2 focus:ring-[#4F7FFF] focus:border-transparent outline-none"
+                  className="w-full rounded-lg border border-[rgba(11,18,32,0.08)] bg-canvas py-3 pl-10 pr-4 text-ink outline-none placeholder:text-ink-faint focus:ring-2 focus:ring-accent"
                   placeholder="name@company.com"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="password" className="mb-2 block text-sm font-medium text-ink-soft">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-faint" />
                 <input
                   id="password"
                   name="password"
                   type="password"
                   autoComplete="new-password"
                   required
+                  minLength={8}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 border border-[rgba(255,255,255,0.05)] rounded-lg bg-[#151B2B] text-white placeholder-gray-500 focus:ring-2 focus:ring-[#4F7FFF] focus:border-transparent outline-none"
+                  className="w-full rounded-lg border border-[rgba(11,18,32,0.08)] bg-canvas py-3 pl-10 pr-4 text-ink outline-none placeholder:text-ink-faint focus:ring-2 focus:ring-accent"
                   placeholder="At least 8 characters"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-2">
+              <label
+                htmlFor="confirmPassword"
+                className="mb-2 block text-sm font-medium text-ink-soft"
+              >
                 Confirm Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-faint" />
                 <input
                   id="confirmPassword"
                   name="confirmPassword"
                   type="password"
                   autoComplete="new-password"
                   required
+                  minLength={8}
                   value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 border border-[rgba(255,255,255,0.05)] rounded-lg bg-[#151B2B] text-white placeholder-gray-500 focus:ring-2 focus:ring-[#4F7FFF] focus:border-transparent outline-none"
+                  onChange={(e) =>
+                    setFormData({ ...formData, confirmPassword: e.target.value })
+                  }
+                  className="w-full rounded-lg border border-[rgba(11,18,32,0.08)] bg-canvas py-3 pl-10 pr-4 text-ink outline-none placeholder:text-ink-faint focus:ring-2 focus:ring-accent"
                   placeholder="Confirm your password"
                 />
               </div>
             </div>
           </div>
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full px-6 py-3 bg-[#4F7FFF] hover:bg-[#6B92FF] text-white rounded-lg font-medium transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(79,127,255,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              ) : (
-                <>
-                  Sign Up for Free
-                  <ArrowRight className="w-5 h-5" />
-                </>
-              )}
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn btn-primary w-full justify-center disabled:opacity-50"
+          >
+            {loading ? (
+              <div className="inline-block h-5 w-5 animate-spin rounded-full border-b-2 border-white" />
+            ) : (
+              <>
+                Sign Up for Free
+                <ArrowRight className="h-5 w-5" />
+              </>
+            )}
+          </button>
 
-          <div className="text-center">
-            <p className="text-sm text-gray-400">
-              Already have an account?{" "}
-              <Link href="/auth/signin" className="text-[#4F7FFF] hover:text-[#6B92FF] font-medium">
-                Sign in
-              </Link>
-            </p>
-          </div>
-
+          <p className="text-center text-sm text-ink-muted">
+            Already have an account?{" "}
+            <Link href="/auth/signin" className="font-medium text-accent hover:text-accent-hover">
+              Sign in
+            </Link>
+          </p>
         </form>
       </div>
     </div>

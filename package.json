@@ -1,7 +1,7 @@
 {
-  "name": "api-arena",
+  "name": "endpointly",
   "version": "1.0.0",
-  "description": "API Marketplace & Management Platform",
+  "description": "Endpointly — API Marketplace & Management Platform",
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
@@ -24,7 +24,7 @@
     "test": "node scripts/smoke-test.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": "24.x"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

@@ -217,17 +217,17 @@ async function handleGatewayRequest(
   let responseText: string | null = null;
 
   const upstream = resolveUpstream(api, apiVersion.openApiSpec);
-  // Never forward the Arena API key to upstream — it was only used for gateway auth.
+  // Never forward the Endpointly API key to upstream — it was only used for gateway auth.
   const forwardHeaders: Record<string, string> = {
     "Content-Type": request.headers.get("content-type") || "application/json",
     Accept: request.headers.get("accept") || "application/json",
-    "User-Agent": "APIArena-Gateway/1.0",
+    "User-Agent": "Endpointly-Gateway/1.0",
   };
   if (keyValidation.userId) {
-    forwardHeaders["X-APIArena-User-Id"] = keyValidation.userId;
+    forwardHeaders["X-Endpointly-User-Id"] = keyValidation.userId;
   }
   if (keyValidation.keyId) {
-    forwardHeaders["X-APIArena-Key-Id"] = keyValidation.keyId;
+    forwardHeaders["X-Endpointly-Key-Id"] = keyValidation.keyId;
   }
 
   try {

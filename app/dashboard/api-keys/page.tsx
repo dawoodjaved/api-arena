@@ -199,7 +199,7 @@ export default function APIKeysPage() {
                     {(key.scopes || []).join(", ") || "full"}
                   </p>
                   <code className="text-xs text-gray-500 font-mono">
-                    {key.keyHint || key.keyPrefix || "ara_****"}…
+                    {key.keyHint || key.keyPrefix || "epl_****"}…
                   </code>
                 </div>
                 <button

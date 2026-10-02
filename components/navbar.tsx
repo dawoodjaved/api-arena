@@ -22,7 +22,7 @@ export function Navbar() {
     <nav className="sticky top-0 z-50 border-b border-[rgba(11,18,32,0.08)] bg-[rgba(243,245,247,0.9)] backdrop-blur-md">
       <div className="mx-auto flex h-[4.25rem] max-w-container items-center justify-between px-5">
         <Link href="/" className="font-display text-xl font-bold tracking-tight text-ink">
-          APIArena
+          Endpointly
         </Link>
 
         <div className="hidden items-center gap-8 md:flex">

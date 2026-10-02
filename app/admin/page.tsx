@@ -36,7 +36,7 @@ export default function AdminPage() {
           <h1 className="mb-2 font-display text-4xl font-bold text-ink">
             Admin Panel
           </h1>
-          <p className="text-ink-muted">Manage the APIArena platform</p>
+          <p className="text-ink-muted">Manage the Endpointly platform</p>
         </div>
 
         <Link

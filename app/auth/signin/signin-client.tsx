@@ -86,7 +86,7 @@ export default function SignInClient() {
       <div className="w-full max-w-md space-y-8 rounded-2xl border border-[rgba(11,18,32,0.08)] bg-surface p-8 shadow-soft">
         <div>
           <h2 className="text-center font-display text-3xl font-bold text-ink">
-            Sign in to APIArena
+            Sign in to Endpointly
           </h2>
           <p className="mt-2 text-center text-sm text-ink-muted">
             Access the API marketplace and developer portal

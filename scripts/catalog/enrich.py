@@ -1,4 +1,4 @@
-"""Enrichment helpers: slug, category map, auth normalize, Arena Score."""
+"""Enrichment helpers: slug, category map, auth normalize, Endpointly Score."""
 from __future__ import annotations
 
 import hashlib
@@ -166,7 +166,7 @@ def source_key(*parts: str) -> str:
 
 def arena_score(row: dict[str, Any]) -> int:
     """
-    APIArena-unique developer-readiness score (0–100).
+    Endpointly-unique developer-readiness score (0–100).
     Rewards HTTPS, clear auth, CORS, OpenAPI, docs, and description quality.
     """
     score = 20  # baseline listing

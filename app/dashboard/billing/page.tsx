@@ -31,7 +31,7 @@ export default function BillingPage() {
 
   const handleUpgrade = async (plan: string) => {
     if (plan === "enterprise") {
-      setNotice("Email sales@apiarena.local for Enterprise.");
+      setNotice("Email sales@endpointly.local for Enterprise.");
       return;
     }
     if (stripeConfigured === false) {

@@ -1,0 +1,14 @@
+# Never ship local secrets / DB overrides to Vercel
+.env
+.env.*
+!.env.example
+.vercel
+.neon
+scripts/catalog/.venv
+scripts/catalog/feeds.local.json
+data/catalog/*.csv
+data/catalog/seed_catalog.json
+data/catalog/specs
+node_modules
+.next
+generated

@@ -1,4 +1,4 @@
-# APIArena Setup Instructions
+# Endpointly Setup Instructions
 
 ## Authentication Setup
 
@@ -53,7 +53,7 @@ Make sure your database is running and configured:
 
 ```bash
 # Set DATABASE_URL in .env
-DATABASE_URL="postgresql://user:password@localhost:5432/apiarena"
+DATABASE_URL="postgresql://user:password@localhost:5432/endpointly"
 
 # Run migrations
 npx prisma migrate dev

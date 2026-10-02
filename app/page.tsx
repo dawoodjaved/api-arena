@@ -25,13 +25,13 @@ export default async function Home() {
         <div className="relative mx-auto grid min-h-[calc(100vh-4.25rem)] max-w-container items-end gap-10 px-5 pb-16 pt-14 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:pb-20 lg:pt-10">
           <div className="animate-fade-up">
             <p className="font-display text-5xl font-bold tracking-tight text-ink sm:text-6xl lg:text-7xl">
-              APIArena
+              Endpointly
             </p>
             <h1 className="mt-5 max-w-xl font-display text-3xl font-semibold leading-tight tracking-tight text-ink-soft sm:text-4xl">
               Publish, discover, and ship APIs without the platform sprawl.
             </h1>
             <p className="mt-4 max-w-md text-base text-ink-muted sm:text-lg">
-              Enriched marketplace with Arena Score, OpenAPI docs, keys, playground, and real usage — one loop for providers and developers.
+              Enriched marketplace with Endpointly Score, OpenAPI docs, keys, playground, and real usage — one loop for providers and developers.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/marketplace" className="btn btn-primary">
@@ -76,7 +76,7 @@ export default async function Home() {
                 style={{ color: "rgba(255,255,255,0.82)" }}
               >
 {`GET /api/gateway/demo-weather/1.0.0/get
-X-API-Key: ara_••••••••
+X-API-Key: epl_••••••••
 
 ← 200 OK  ·  84ms
 {

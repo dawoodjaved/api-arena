@@ -65,3 +65,4 @@ scripts/catalog/**/__pycache__/
 *.py[cod]
 .venv/
 venv/
+.env*

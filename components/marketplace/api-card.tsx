@@ -74,7 +74,7 @@ export function APICard({ api }: APICardProps) {
             <div className={`shrink-0 text-right ${scoreTone(score)}`}>
               <p className="font-display text-lg font-bold leading-none">{score}</p>
               <p className="mt-0.5 text-[10px] uppercase tracking-wide text-ink-faint">
-                Arena
+                Score
               </p>
             </div>
           </div>

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-APIArena catalog sync
+Endpointly catalog sync
 
 Fetches configured directory feeds, enriches rows, optionally hydrates OpenAPI
 specs, updates the local CSV sheet, and writes seed JSON for `npm run db:seed`.

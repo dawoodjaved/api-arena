@@ -1,4 +1,4 @@
-"""Fetch and normalize remote API directory feeds into Arena catalog rows."""
+"""Fetch and normalize remote API directory feeds into Endpointly catalog rows."""
 from __future__ import annotations
 
 import json
@@ -21,7 +21,7 @@ from enrich import (
     tags_from,
 )
 
-UA = {"User-Agent": "APIArena-CatalogSync/1.0", "Accept": "application/json"}
+UA = {"User-Agent": "Endpointly-CatalogSync/1.0", "Accept": "application/json"}
 TIMEOUT = 90
 FEEDS_LOCAL = Path(__file__).resolve().parent / "feeds.local.json"
 FEEDS_EXAMPLE = Path(__file__).resolve().parent / "feeds.example.json"

@@ -161,5 +161,5 @@ Add to `vercel.json`:
 
 - The import process is **idempotent** - running it multiple times won't create duplicates
 - APIs are imported with `isApproved: true` so they appear immediately
-- The system user (`system@apiarena.com`) is created automatically if needed
+- The system user (`system@endpointly.com`) is created automatically if needed
 - Each API gets a default version (1.0.0) and endpoint (/)

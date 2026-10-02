@@ -30,7 +30,7 @@ export function ApiComparison({ apis }: { apis: CompareApi[] }) {
     { label: "Name", get: (a) => a.name },
     { label: "Category", get: (a) => a.category },
     {
-      label: "Arena Score",
+      label: "Endpointly Score",
       get: (a) => String(a.arenaScore ?? 0),
     },
     {

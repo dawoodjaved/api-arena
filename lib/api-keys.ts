@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "crypto";
 
 export function generateApiKeyPlaintext(): string {
-  return `ara_${randomBytes(24).toString("hex")}`;
+  return `epl_${randomBytes(24).toString("hex")}`;
 }
 
 export function hashApiKey(plaintext: string): string {

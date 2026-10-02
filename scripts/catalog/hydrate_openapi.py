@@ -13,7 +13,7 @@ try:
 except ImportError:  # pragma: no cover
     yaml = None
 
-UA = {"User-Agent": "APIArena-CatalogHydrate/1.0", "Accept": "application/json, application/yaml, text/yaml, text/plain, */*"}
+UA = {"User-Agent": "Endpointly-CatalogHydrate/1.0", "Accept": "application/json, application/yaml, text/yaml, text/plain, */*"}
 TIMEOUT = 45
 
 

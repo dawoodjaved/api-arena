@@ -28,8 +28,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: "Database connection failed",
-          message: "The database server is not running or not configured. Please check your DATABASE_URL environment variable and ensure PostgreSQL is running.",
-          help: "See DATABASE_SETUP.md for setup instructions",
+          message:
+            "Could not reach the database. Check DATABASE_URL in your environment (Neon pooled URL with sslmode=require).",
         },
         { status: 503 }
       );
@@ -37,10 +37,11 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const validated = registerSchema.parse(body);
+    const email = validated.email.trim().toLowerCase();
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email: validated.email },
+      where: { email },
     });
 
     if (existingUser) {
@@ -58,8 +59,8 @@ export async function POST(request: NextRequest) {
       // Create user first
       const user = await tx.user.create({
         data: {
-          name: validated.name,
-          email: validated.email,
+          name: validated.name.trim(),
+          email,
         },
       });
 
@@ -137,8 +138,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           { 
             error: "Database connection failed",
-            message: "Please check your database configuration and ensure the database server is running.",
-            help: "See DATABASE_SETUP.md for setup instructions",
+            message: "Could not reach the database. Verify DATABASE_URL on the host (Neon pooled + sslmode=require).",
             code: prismaError.code
           },
           { status: 503 }
@@ -160,8 +160,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: "Database connection failed",
-          message: "The database server is not running or not accessible.",
-          help: "Please check your DATABASE_URL environment variable and ensure PostgreSQL is running. See DATABASE_SETUP.md for setup instructions."
+          message: "Could not reach the database. Verify DATABASE_URL on the host.",
         },
         { status: 503 }
       );

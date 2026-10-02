@@ -1,4 +1,4 @@
-# APIArena Improvements
+# Endpointly Improvements
 
 ## MVP focus (current)
 

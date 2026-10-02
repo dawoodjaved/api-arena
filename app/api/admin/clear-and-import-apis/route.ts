@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
 
     // Find system user
     const systemUser = await prisma.user.findFirst({
-      where: { email: "system@apiarena.com" },
+      where: { email: "system@endpointly.com" },
     });
 
     if (!systemUser) {

@@ -28,8 +28,11 @@ export const authOptions = {
           throw new Error("Email and password are required");
         }
 
+        const email = String(credentials.email).trim().toLowerCase();
+        const password = String(credentials.password);
+
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+          where: { email },
         });
 
         if (!user) {
@@ -43,14 +46,11 @@ export const authOptions = {
           },
         });
 
-        if (!account) {
+        if (!account?.access_token) {
           throw new Error("Please sign up first");
         }
 
-        const isValid = await bcrypt.compare(
-          credentials.password,
-          (account.access_token as string) || ""
-        );
+        const isValid = await bcrypt.compare(password, account.access_token);
 
         if (!isValid) {
           throw new Error("Invalid email or password");

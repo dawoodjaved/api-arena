@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
-import { PrismaClient } from "../generated/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -74,7 +74,7 @@ const demoCatalog: DemoApi[] = [
     },
     reviews: [
       {
-        email: "dev@apiarena.local",
+        email: "dev@endpointly.local",
         rating: 5,
         comment: "Clean docs and reliable responses for weather widgets.",
       },
@@ -370,7 +370,7 @@ async function upsertCatalogApi(providerId: string, item: CatalogRow) {
   const changelog = [
     item.openapiUrl ? `OpenAPI available` : null,
     `Auth: ${item.authType || "unknown"}`,
-    `Arena Score: ${item.arenaScore ?? 0}`,
+    `Endpointly Score: ${item.arenaScore ?? 0}`,
     `Endpoints: ${endpointCount}`,
   ]
     .filter(Boolean)
@@ -536,7 +536,7 @@ async function syncVersionAndEndpoints(
 
 async function main() {
   const admin = await upsertUser({
-    email: "admin@apiarena.local",
+    email: "admin@endpointly.local",
     name: "Alex Rivera",
     role: "admin",
     password: "admin123",
@@ -544,7 +544,7 @@ async function main() {
   });
 
   const provider = await upsertUser({
-    email: "provider@apiarena.local",
+    email: "provider@endpointly.local",
     name: "Nova Labs",
     role: "provider",
     password: "provider123",
@@ -552,30 +552,30 @@ async function main() {
   });
 
   const catalogProvider = await upsertUser({
-    email: "catalog@apiarena.local",
-    name: "APIArena Catalog",
+    email: "catalog@endpointly.local",
+    name: "Endpointly Catalog",
     role: "provider",
     password: "catalog123",
-    image: avatar("apiarena-catalog"),
+    image: avatar("endpointly-catalog"),
   });
 
   const reviewers = await Promise.all([
     upsertUser({
-      email: "dev@apiarena.local",
+      email: "dev@endpointly.local",
       name: "Sam Chen",
       role: "user",
       password: "user1234",
       image: avatar("sam-chen"),
     }),
     upsertUser({
-      email: "maya@apiarena.local",
+      email: "maya@endpointly.local",
       name: "Maya Okonkwo",
       role: "user",
       password: "user1234",
       image: avatar("maya-okonkwo"),
     }),
     upsertUser({
-      email: "jordan@apiarena.local",
+      email: "jordan@endpointly.local",
       name: "Jordan Lee",
       role: "user",
       password: "user1234",
@@ -643,10 +643,10 @@ async function main() {
   console.log("Seed complete.");
   console.log(counts);
   console.log("Logins:");
-  console.log("  admin@apiarena.local / admin123");
-  console.log("  provider@apiarena.local / provider123");
-  console.log("  catalog@apiarena.local / catalog123");
-  console.log("  dev@apiarena.local / user1234");
+  console.log("  admin@endpointly.local / admin123");
+  console.log("  provider@endpointly.local / provider123");
+  console.log("  catalog@endpointly.local / catalog123");
+  console.log("  dev@endpointly.local / user1234");
   console.log("Admin id:", admin.id);
 }
 

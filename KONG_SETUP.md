@@ -1,6 +1,6 @@
 # Kong Gateway Setup Guide
 
-Kong Gateway provides better performance, security, and scalability for API routing. This guide shows how to integrate Kong with APIArena.
+Kong Gateway provides better performance, security, and scalability for API routing. This guide shows how to integrate Kong with Endpointly.
 
 ## What is Kong Gateway?
 

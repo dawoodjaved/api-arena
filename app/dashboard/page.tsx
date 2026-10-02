@@ -91,7 +91,7 @@ export default function DashboardPage() {
         title: "Browse the marketplace",
         done: true,
         href: "/marketplace",
-        hint: "Find try-ready APIs by Arena Score",
+        hint: "Find try-ready APIs by Endpointly Score",
       },
       {
         id: "key",
@@ -307,7 +307,7 @@ export default function DashboardPage() {
                   <p className="text-sm font-medium uppercase tracking-wide">Try next</p>
                 </div>
                 <h2 className="mt-2 font-display text-xl font-semibold text-ink">
-                  High Arena Score picks
+                  High Endpointly Score picks
                 </h2>
                 <p className="mt-1 text-sm text-ink-muted">
                   Prefer try-ready APIs with real OpenAPI paths.
@@ -358,7 +358,7 @@ export default function DashboardPage() {
                         {api.arenaScore ?? 0}
                       </p>
                       <p className="mt-0.5 text-[10px] uppercase tracking-wide text-ink-faint">
-                        Arena
+                        Score
                       </p>
                     </div>
                   </Link>

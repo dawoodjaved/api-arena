@@ -3,6 +3,9 @@
 @tailwind utilities;
 
 :root {
+  --font-display: "Syne", system-ui, sans-serif;
+  --font-sans: "DM Sans", system-ui, sans-serif;
+
   --color-primary: #0d7377;
   --color-primary-hover: #0a5c5f;
   --color-primary-dark: #084b4e;

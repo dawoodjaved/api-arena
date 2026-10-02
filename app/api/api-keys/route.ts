@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       keys.map(({ key, ...rest }) => ({
         ...rest,
         key: undefined,
-        keyHint: rest.keyPrefix || "ara_****",
+        keyHint: rest.keyPrefix || "epl_****",
       }))
     );
   } catch (error) {

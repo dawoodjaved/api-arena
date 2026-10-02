@@ -1,6 +1,6 @@
-# APIArena
+# Endpointly
 
-APIArena is a two-sided API marketplace built with Next.js. Providers publish OpenAPI specs, admins approve listings, and developers discover, compare, subscribe, and call APIs through a keyed gateway — with usage tracking and Stripe billing in the same product loop.
+Endpointly is a two-sided API marketplace built with Next.js. Providers publish OpenAPI specs, admins approve listings, and developers discover, compare, subscribe, and call APIs through a keyed gateway — with usage tracking and Stripe billing in the same product loop.
 
 **Core flow:** Publish → Approve → Discover → Create key → Playground → Usage + Billing
 
@@ -9,7 +9,7 @@ APIArena is a two-sided API marketplace built with Next.js. Providers publish Op
 ## Features
 
 **Marketplace**
-- Browse and search an enriched catalog ranked by **Arena Score** (HTTPS, auth, CORS, OpenAPI readiness)
+- Browse and search an enriched catalog ranked by **Endpointly Score** (HTTPS, auth, CORS, OpenAPI readiness)
 - Filters for try-ready APIs, OpenAPI, auth type, HTTPS, and minimum score
 - API detail pages with Swagger UI, code examples, Postman export, reviews, and side-by-side compare
 - Lazy OpenAPI hydration on first open when a listing still needs a real spec
@@ -50,7 +50,7 @@ APIArena is a two-sided API marketplace built with Next.js. Providers publish Op
 
 ```bash
 git clone <repository-url>
-cd api-arena
+cd endpointly   # use your local folder name if different
 npm install
 cp .env.example .env
 ```
@@ -74,9 +74,9 @@ Open [http://localhost:3000](http://localhost:3000).
 
 | Role | Email | Password |
 |------|--------|----------|
-| Admin | `admin@apiarena.local` | `admin123` |
-| Provider | `provider@apiarena.local` | `provider123` |
-| Developer | `dev@apiarena.local` | `user1234` |
+| Admin | `admin@endpointly.local` | `admin123` |
+| Provider | `provider@endpointly.local` | `provider123` |
+| Developer | `dev@endpointly.local` | `user1234` |
 
 Seeding is idempotent — re-running `npm run db:seed` upserts by stable keys and does not create duplicate APIs, users, or reviews.
 
@@ -98,7 +98,7 @@ npm run db:seed
 ## Project layout
 
 ```
-api-arena/
+endpointly/
 ├── app/
 │   ├── api/            # REST routes (gateway, Stripe, catalog, admin, …)
 │   ├── marketplace/    # Discovery, detail, compare
