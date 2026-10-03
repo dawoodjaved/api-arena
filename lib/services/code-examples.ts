@@ -1,5 +1,3 @@
-import type { SDKLanguage } from "./sdk-generator";
-
 interface OpenAPISpec {
   openapi?: string;
   swagger?: string;

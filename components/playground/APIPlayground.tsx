@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Play, Copy, CheckCircle2 } from "lucide-react";
-import { CodeBracketIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
+import { Play, Copy, CheckCircle2, Code2, FileText } from "lucide-react";
 
 interface APIPlaygroundProps {
   apiKey?: string;
@@ -119,7 +118,7 @@ export function APIPlayground({
     <div className="rounded-2xl border border-[rgba(11,18,32,0.08)] bg-surface p-6 shadow-soft">
       <div className="mb-6">
         <h2 className="mb-2 flex items-center gap-2 font-display text-2xl font-semibold text-ink">
-          <CodeBracketIcon className="h-6 w-6 text-accent" />
+          <Code2 className="h-6 w-6 text-accent" />
           API Playground
         </h2>
         <p className="text-ink-muted">Test your API endpoints interactively</p>
@@ -236,7 +235,7 @@ export function APIPlayground({
         <div className="space-y-4">
           <div>
             <label className="mb-2 flex items-center gap-2 text-sm font-medium text-ink">
-              <DocumentTextIcon className="h-5 w-5" />
+              <FileText className="h-5 w-5" />
               Response
             </label>
             <div className="h-96 w-full overflow-auto rounded-lg border border-[rgba(11,18,32,0.08)] bg-canvas px-4 py-3 font-mono text-xs text-ink-soft">
