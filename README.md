@@ -49,12 +49,7 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000).
 
 **Seed logins**
-
-| Role      | Email                       | Password     |
-|-----------|-----------------------------|--------------|
-| Admin     | `admin@apidoorway.local`    | `admin123`   |
-| Provider  | `provider@apidoorway.local` | `provider123`|
-| Developer | `dev@apidoorway.local`      | `user1234`   |
+| Developer | `dev@apidoorway.local` | `user1234` |
 
 ## Commit and push
 
